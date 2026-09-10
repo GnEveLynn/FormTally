@@ -1,0 +1,16 @@
+{
+  "name": "formtally",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace @formtally/web run dev",
+    "build:web": "npm --workspace @formtally/web run build",
+    "test:web": "npm --workspace @formtally/web run test:unit"
+  },
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  }
+}

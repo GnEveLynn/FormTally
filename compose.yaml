@@ -1,0 +1,3 @@
+name: formtally
+# PostgreSQL and migrations are introduced in Task 2.
+services: {}

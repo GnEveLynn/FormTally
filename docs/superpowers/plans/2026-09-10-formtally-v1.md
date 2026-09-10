@@ -75,15 +75,15 @@
 
 **Steps:**
 
-- [ ] 用官方 Vite Vue 3 TypeScript 模板初始化 `apps/web/`，根 `package.json` 使用 npm workspaces；只保留启动页、Vue Router 和必要构建配置。
-- [ ] 把当前页面实际使用的颜色、字号和间距放入 `packages/design-tokens`；不创建空的小程序或 App 工程。
-- [ ] 在 `server/` 初始化 Go module；配置只从环境变量读取并在启动时校验，不在仓库写秘密。
-- [ ] 先写 `GET /healthz` handler 测试，断言 `200`、JSON Content-Type、固定健康结构。
-- [ ] 运行 Go 测试，确认因为路由尚未实现而失败。
-- [ ] 实现最小 `ServeMux` 和可注入的 HTTP server，令测试通过。
-- [ ] 先写 H5 启动页 smoke test，再补最小页面实现。
-- [ ] 在 `Makefile` 固定 `dev-api`、`dev-h5`、`test-go`、`test-db`、`test-web`、`test-e2e`、`verify` 命令名。
-- [ ] 验证 Ctrl+C 能让 API 优雅停止，配置错误会在监听端口前失败。
+- [x] 用官方 Vite Vue 3 TypeScript 模板初始化 `apps/web/`，根 `package.json` 使用 npm workspaces；只保留启动页、Vue Router 和必要构建配置。
+- [x] 把当前页面实际使用的颜色、字号和间距放入 `packages/design-tokens`；不创建空的小程序或 App 工程。
+- [x] 在 `server/` 初始化 Go module；配置只从环境变量读取并在启动时校验，不在仓库写秘密。
+- [x] 先写 `GET /healthz` handler 测试，断言 `200`、JSON Content-Type、固定健康结构。
+- [x] 运行 Go 测试，确认因为路由尚未实现而失败。
+- [x] 实现最小 `ServeMux` 和可注入的 HTTP server，令测试通过。
+- [x] 先写 H5 启动页 smoke test，再补最小页面实现。
+- [x] 在 `Makefile` 固定 `dev-api`、`dev-h5`、`test-go`、`test-db`、`test-web`、`test-e2e`、`verify` 命令名。
+- [x] 验证 Ctrl+C 能让 API 优雅停止，配置错误会在监听端口前失败。
 
 **Verify:**
 

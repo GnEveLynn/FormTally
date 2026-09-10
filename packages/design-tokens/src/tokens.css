@@ -1,0 +1,9 @@
+:root {
+  --ft-color-background: #fafbf9;
+  --ft-color-text: #163c35;
+  --ft-color-text-muted: #626b75;
+  --ft-font-size-title: 2rem;
+  --ft-font-size-body: 1rem;
+  --ft-space-sm: 0.75rem;
+  --ft-space-lg: 1.5rem;
+}
