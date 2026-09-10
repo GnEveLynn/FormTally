@@ -46,7 +46,7 @@ func withRecovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if recover() != nil {
-				writeError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "服务暂时不可用")
+				WriteError(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "服务暂时不可用")
 			}
 		}()
 		next.ServeHTTP(w, r)
@@ -57,7 +57,7 @@ func withOrigin(allowed map[string]struct{}, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if changesState(r.Method) {
 			if _, ok := allowed[r.Header.Get("Origin")]; !ok {
-				writeError(w, r, http.StatusForbidden, "ORIGIN_NOT_ALLOWED", "请求来源不被允许")
+				WriteError(w, r, http.StatusForbidden, "ORIGIN_NOT_ALLOWED", "请求来源不被允许")
 				return
 			}
 		}
@@ -98,7 +98,7 @@ func withAccessLog(logger *slog.Logger, next http.Handler) http.Handler {
 			status = http.StatusOK
 		}
 		logger.Info("http request",
-			"request_id", requestID(r.Context()),
+			"request_id", RequestID(r.Context()),
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", status,

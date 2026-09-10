@@ -52,7 +52,7 @@ func TestMigrationsUpgradeAndRollbackEmptySchema(t *testing.T) {
 		t.Fatal("pgcrypto extension was not installed")
 	}
 
-	if err := Migrate(context.Background(), databaseURL, "../../migrations", "down"); err != nil {
+	if err := Migrate(context.Background(), databaseURL, "../../migrations", "reset"); err != nil {
 		t.Fatal(err)
 	}
 	pool, err = Open(context.Background(), databaseURL)

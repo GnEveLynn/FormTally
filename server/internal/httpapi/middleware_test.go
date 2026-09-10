@@ -52,7 +52,7 @@ func TestRouterAppliesJSONProtocol(t *testing.T) {
 func TestOriginMiddleware(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		writeJSON(w, http.StatusCreated, map[string]string{"status": "created"})
+		WriteJSON(w, http.StatusCreated, map[string]string{"status": "created"})
 	})
 	handler := middleware(logger, []string{"http://127.0.0.1:5173"})(next)
 

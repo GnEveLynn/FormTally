@@ -13,6 +13,8 @@ type Config struct {
 	HTTPAddr       string
 	DatabaseURL    string
 	AllowedOrigins []string
+	Environment    string
+	SMSDriver      string
 }
 
 func LoadConfig() (Config, error) {
@@ -38,7 +40,22 @@ func LoadConfig() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	return Config{HTTPAddr: address, DatabaseURL: databaseURL, AllowedOrigins: origins}, nil
+	environment := envOrDefault("APP_ENV", "development")
+	smsDriver := envOrDefault("SMS_DRIVER", "test")
+	if smsDriver != "test" {
+		return Config{}, errors.New("SMS_DRIVER is not supported")
+	}
+	if environment == "production" && smsDriver == "test" {
+		return Config{}, errors.New("test SMS driver is forbidden in production")
+	}
+	return Config{HTTPAddr: address, DatabaseURL: databaseURL, AllowedOrigins: origins, Environment: environment, SMSDriver: smsDriver}, nil
+}
+
+func envOrDefault(name, fallback string) string {
+	if value, ok := os.LookupEnv(name); ok {
+		return value
+	}
+	return fallback
 }
 
 func parseOrigins(value string) ([]string, error) {

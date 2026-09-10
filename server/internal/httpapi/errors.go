@@ -15,17 +15,17 @@ type apiError struct {
 	RequestID string `json:"requestId"`
 }
 
-func writeError(w http.ResponseWriter, r *http.Request, status int, code, message string) {
-	writeJSON(w, status, errorResponse{Error: apiError{
+func WriteError(w http.ResponseWriter, r *http.Request, status int, code, message string) {
+	WriteJSON(w, status, errorResponse{Error: apiError{
 		Code:      code,
 		Message:   message,
-		RequestID: requestID(r.Context()),
+		RequestID: RequestID(r.Context()),
 	}})
 }
 
 type requestIDKey struct{}
 
-func requestID(ctx context.Context) string {
+func RequestID(ctx context.Context) string {
 	value, _ := ctx.Value(requestIDKey{}).(string)
 	return value
 }

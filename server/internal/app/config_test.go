@@ -62,3 +62,12 @@ func TestLoadConfigRejectsInvalidAllowedOrigins(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadConfigRejectsTestSMSInProduction(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://formtally:formtally@127.0.0.1:5432/formtally?sslmode=disable")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("SMS_DRIVER", "test")
+	if _, err := LoadConfig(); err == nil {
+		t.Fatal("test SMS driver accepted in production")
+	}
+}
