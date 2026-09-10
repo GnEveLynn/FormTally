@@ -1,3 +1,22 @@
 name: formtally
-# PostgreSQL and migrations are introduced in Task 2.
-services: {}
+services:
+  postgres:
+    image: postgres:18
+    container_name: formtally-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: formtally
+      POSTGRES_PASSWORD: formtally
+      POSTGRES_DB: formtally
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - formtally-postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U formtally -d formtally"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  formtally-postgres-data:

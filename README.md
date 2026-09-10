@@ -8,6 +8,8 @@
 
 ```sh
 npm ci
+make db-up
+make migrate
 make dev-api
 ```
 
@@ -19,7 +21,7 @@ make dev-h5
 
 H5：<http://127.0.0.1:5173>；API：<http://127.0.0.1:8080/healthz>，返回 `{"status":"ok"}`。两者独立启动，Ctrl+C 停止；API 会等待正在处理的请求结束，最多 5 秒。
 
-API 只从进程环境读取配置，未设置 `HTTP_ADDR` 时默认 `127.0.0.1:8080`。可选用示例配置：
+开发命令默认连接 `postgres://formtally:formtally@127.0.0.1:5432/formtally`，并只允许 `http://127.0.0.1:5173` 作为写请求来源。可用环境变量覆盖：
 
 ```sh
 cp .env.example .env
@@ -37,6 +39,6 @@ make dev-api
 make verify
 ```
 
-`verify` 执行 Go 测试、H5 单元测试和 TypeScript 检查及生产构建。也可分别使用 `make test-go`、`make test-web`、`npm run build:web`。
+`verify` 执行 Go 测试、真实 PostgreSQL 集成测试、H5 单元测试、TypeScript 检查及生产构建。也可分别使用 `make test-go`、`make test-db`、`make test-web`、`npm run build:web`。
 
-Task 1 提供开发基座与启动页。`compose.yaml` 中的 PostgreSQL 服务和 `make test-db` 在 Task 2 接入；`make test-e2e` 在 Task 4 接入 H5 业务流程测试。这两个尚未接入的命令返回非零状态并说明原因。
+`make migrate-down` 回滚当前数据库迁移。`make test-e2e` 将在 Task 4 接入 H5 业务流程测试，目前会返回非零状态并说明原因。

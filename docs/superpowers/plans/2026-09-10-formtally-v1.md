@@ -116,13 +116,13 @@
 
 **Steps:**
 
-- [ ] 先写公共协议测试：成功与错误响应 Content-Type、`Cache-Control: no-store`、`X-Request-ID` 与错误体一致、未知路由格式统一。
-- [ ] 先写变更请求 Origin 白名单测试；覆盖允许、缺失、不允许三种情况。
-- [ ] 实现最小 JSON/error helper 与 `request-id → recover → access-log → origin` 中间件链。
-- [ ] `slog` 只记录白名单字段；测试日志不出现 Cookie、Authorization、验证码、图片字节和请求体。
-- [ ] 在 Compose 中加入 PostgreSQL 18；迁移只通过显式命令执行，不在 API 启动时自动迁移。
-- [ ] 建立使用 `TEST_DATABASE_URL` 的真实 PostgreSQL 测试 helper；每个测试获得隔离 schema 或事务清理。
-- [ ] 写迁移 up/down smoke test，确认空库能升级到最新并回滚当前迁移。
+- [x] 先写公共协议测试：成功与错误响应 Content-Type、`Cache-Control: no-store`、`X-Request-ID` 与错误体一致、未知路由格式统一。
+- [x] 先写变更请求 Origin 白名单测试；覆盖允许、缺失、不允许三种情况。
+- [x] 实现最小 JSON/error helper 与 `request-id → recover → access-log → origin` 中间件链。
+- [x] `slog` 只记录白名单字段；测试日志不出现 Cookie、Authorization、验证码、图片字节和请求体。
+- [x] 在 Compose 中加入 PostgreSQL 18；迁移只通过显式命令执行，不在 API 启动时自动迁移。
+- [x] 建立使用 `TEST_DATABASE_URL` 的真实 PostgreSQL 测试 helper；每个测试获得隔离 schema 或事务清理。
+- [x] 写迁移 up/down smoke test，确认空库能升级到最新并回滚当前迁移。
 
 **Verify:**
 

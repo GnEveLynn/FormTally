@@ -1,12 +1,17 @@
 package httpapi
 
-import "net/http"
+import (
+	"log/slog"
+	"net/http"
+)
 
-func NewRouter() *http.ServeMux {
+func NewRouter(logger *slog.Logger, allowedOrigins []string) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.Write([]byte("{\"status\":\"ok\"}\n"))
+		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
-	return mux
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		writeError(w, r, http.StatusNotFound, "RESOURCE_NOT_FOUND", "资源不存在")
+	})
+	return middleware(logger, allowedOrigins)(mux)
 }
