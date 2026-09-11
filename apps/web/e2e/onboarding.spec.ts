@@ -10,6 +10,7 @@ test('新用户填写资料、查看计算并保存目标后进入今日页', as
   await page.route('**/v1/profile', route => json(route, { profile: { biologicalSex: 'male', birthDate: '1995-06-18', heightCm: 178, weightKg: 72.5, activityLevel: 'moderate', timezone: 'Asia/Shanghai', healthContext: { pregnant: false, breastfeeding: false, clinicalDietRequired: false }, automaticGoalEligible: true, revision: 1, updatedAt: '2026-09-11T10:00:00+08:00' } }))
   await page.route('**/v1/goal-previews', route => json(route, { preview: effectiveTarget }))
   await page.route('**/v1/goals', route => json(route, { settings: { mode: 'automatic', automatic: { objective: 'fat_loss', pace: 'standard' }, manual: null, revision: 1, updatedAt: '2026-09-11T10:00:00+08:00' }, effectiveTarget }))
+  await page.route('**/v1/days/*', route => route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: { code: 'DEPENDENCY_UNAVAILABLE', message: '测试中未加载日期数据', requestId: 'req_day' } }) }))
 
   await page.goto('/')
   await expect(page).toHaveURL(/\/profile$/)

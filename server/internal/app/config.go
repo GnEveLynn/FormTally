@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
@@ -15,6 +16,17 @@ type Config struct {
 	AllowedOrigins []string
 	Environment    string
 	SMSDriver      string
+	StorageDriver  string
+	StoragePath    string
+	ImageURLSecret string
+	S3Endpoint     string
+	S3Region       string
+	S3Bucket       string
+	S3AccessKey    string
+	S3SecretKey    string
+	OpenAIAPIKey   string
+	OpenAIModel    string
+	OpenAITimeout  time.Duration
 }
 
 func LoadConfig() (Config, error) {
@@ -42,13 +54,39 @@ func LoadConfig() (Config, error) {
 	}
 	environment := envOrDefault("APP_ENV", "development")
 	smsDriver := envOrDefault("SMS_DRIVER", "test")
+	storageDriver := envOrDefault("STORAGE_DRIVER", "filesystem")
+	if storageDriver != "filesystem" && storageDriver != "s3" {
+		return Config{}, errors.New("STORAGE_DRIVER must be filesystem or s3")
+	}
+	if environment == "production" && storageDriver != "s3" {
+		return Config{}, errors.New("filesystem storage is forbidden in production")
+	}
+	storagePath := envOrDefault("STORAGE_PATH", "./var/images")
+	imageURLSecret := envOrDefault("IMAGE_URL_SECRET", "formtally-development-image-secret")
+	s3Values := []string{os.Getenv("S3_ENDPOINT"), os.Getenv("S3_REGION"), os.Getenv("S3_BUCKET"), os.Getenv("S3_ACCESS_KEY"), os.Getenv("S3_SECRET_KEY")}
+	if storageDriver == "s3" {
+		for _, value := range s3Values {
+			if value == "" {
+				return Config{}, errors.New("S3 configuration is incomplete")
+			}
+		}
+	}
 	if smsDriver != "test" {
 		return Config{}, errors.New("SMS_DRIVER is not supported")
 	}
 	if environment == "production" && smsDriver == "test" {
 		return Config{}, errors.New("test SMS driver is forbidden in production")
 	}
-	return Config{HTTPAddr: address, DatabaseURL: databaseURL, AllowedOrigins: origins, Environment: environment, SMSDriver: smsDriver}, nil
+	openAITimeout, err := time.ParseDuration(envOrDefault("OPENAI_TIMEOUT", "20s"))
+	if err != nil || openAITimeout <= 0 {
+		return Config{}, errors.New("OPENAI_TIMEOUT must be a positive duration")
+	}
+	return Config{
+		HTTPAddr: address, DatabaseURL: databaseURL, AllowedOrigins: origins, Environment: environment, SMSDriver: smsDriver,
+		StorageDriver: storageDriver, StoragePath: storagePath, ImageURLSecret: imageURLSecret,
+		S3Endpoint: s3Values[0], S3Region: s3Values[1], S3Bucket: s3Values[2], S3AccessKey: s3Values[3], S3SecretKey: s3Values[4],
+		OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"), OpenAIModel: os.Getenv("OPENAI_MODEL"), OpenAITimeout: openAITimeout,
+	}, nil
 }
 
 func envOrDefault(name, fallback string) string {

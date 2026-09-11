@@ -25,5 +25,6 @@ export async function guardRoute(path: string, requiresAuth: boolean, store: Ses
   if (!requiresAuth) return true
   const target = await bootRoute(store)
   if (store.state.status !== 'authenticated') return target ?? '/'
+  if (target === '/today') return true
   return target === path || (target === '/goals' && path.startsWith('/goals/')) ? true : (target ?? '/')
 }

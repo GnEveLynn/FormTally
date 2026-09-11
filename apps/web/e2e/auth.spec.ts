@@ -17,6 +17,7 @@ function json(route: Route, status: number, body: unknown) {
 
 async function mockSession(page: Page, handler: (route: Route) => Promise<void>) {
   await page.route('**/v1/auth/session', handler)
+  await page.route('**/v1/days/*', route => json(route, 503, { error: { code: 'DEPENDENCY_UNAVAILABLE', message: '测试中未加载日期数据', requestId: 'req_day' } }))
 }
 
 test('未登录用户打开 H5 后看到产品说明与登录入口', async ({ page }) => {

@@ -1,0 +1,14 @@
+[
+  {
+    "name": "weight scales from per-100g basis",
+    "basis": { "energyKcal": 165, "proteinGrams": 31, "carbGrams": 0, "fatGrams": 3.6 },
+    "grams": 120,
+    "want": { "energyKcal": 198, "proteinGrams": 37.2, "carbGrams": 0, "fatGrams": 4.3 }
+  },
+  {
+    "name": "decimal values round to one place",
+    "basis": { "energyKcal": 116, "proteinGrams": 2.6, "carbGrams": 25.9, "fatGrams": 0.3 },
+    "grams": 135.5,
+    "want": { "energyKcal": 157, "proteinGrams": 3.5, "carbGrams": 35.1, "fatGrams": 0.4 }
+  }
+]

@@ -70,6 +70,7 @@ describe('启动路由', () => {
 
     expect(await guardRoute('/today', true, profileRequired)).toBe('/profile')
     expect(await guardRoute('/today', true, completed)).toBe(true)
+    expect(await guardRoute('/meals/new', true, completed)).toBe(true)
   })
 
 	 it('目标设置用户可以进入目标结果子页面', async () => {

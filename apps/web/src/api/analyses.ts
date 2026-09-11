@@ -1,0 +1,4 @@
+import type {AnalysisResponse} from '@formtally/api-contract/analyses'
+import {http} from './http'
+export async function createAnalysis(input:{image:File;processingMode:'ai'|'manual';occurredAt:string;mealType:string;aiConsentVersion?:string},key:string):Promise<AnalysisResponse>{const body=new FormData();body.set('image',input.image);body.set('processingMode',input.processingMode);body.set('occurredAt',input.occurredAt);body.set('mealType',input.mealType);if(input.aiConsentVersion)body.set('aiConsentVersion',input.aiConsentVersion);return http('/v1/meal-analyses',{method:'POST',headers:{'Idempotency-Key':key},body})}
+export function retryAnalysis(id:string,input:{aiConsentVersion:string;expectedRevision:number},key:string):Promise<AnalysisResponse>{return http(`/v1/meal-analyses/${id}/retry`,{method:'POST',headers:{'Idempotency-Key':key},body:JSON.stringify(input)})}

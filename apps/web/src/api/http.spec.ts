@@ -52,4 +52,15 @@ describe('HTTP 客户端', () => {
       code: 'HTTP_ERROR',
     })
   })
+
+  it('multipart 请求让浏览器生成 Content-Type boundary', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    )
+    const body = new FormData()
+    body.set('image', new File(['x'], 'meal.jpg', { type: 'image/jpeg' }))
+    await http('/v1/meal-analyses', { method: 'POST', body })
+    const headers = new Headers(fetchMock.mock.calls[0]![1]?.headers)
+    expect(headers.has('Content-Type')).toBe(false)
+  })
 })

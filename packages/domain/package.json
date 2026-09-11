@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./meal-editor": "./src/meal-editor.ts",
     "./phone": "./src/phone.ts",
     "./profile-validation": "./src/profile-validation.ts"
   }

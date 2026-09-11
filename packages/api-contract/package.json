@@ -4,9 +4,12 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./analyses": "./src/analyses.ts",
     "./auth": "./src/auth.ts",
+    "./days": "./src/days.ts",
     "./errors": "./src/errors.ts",
     "./goals": "./src/goals.ts",
+    "./meals": "./src/meals.ts",
     "./profile": "./src/profile.ts"
   }
 }

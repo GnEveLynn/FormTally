@@ -8,14 +8,20 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/GnEveLynn/FormTally/server/internal/analysis"
 	"github.com/GnEveLynn/FormTally/server/internal/app"
 	"github.com/GnEveLynn/FormTally/server/internal/auth"
+	"github.com/GnEveLynn/FormTally/server/internal/days"
 	"github.com/GnEveLynn/FormTally/server/internal/goals"
 	"github.com/GnEveLynn/FormTally/server/internal/httpapi"
+	"github.com/GnEveLynn/FormTally/server/internal/idempotency"
+	"github.com/GnEveLynn/FormTally/server/internal/meals"
 	"github.com/GnEveLynn/FormTally/server/internal/postgres"
 	"github.com/GnEveLynn/FormTally/server/internal/profile"
 	"github.com/GnEveLynn/FormTally/server/internal/sms"
+	"github.com/GnEveLynn/FormTally/server/internal/storage"
 )
 
 func main() {
@@ -46,13 +52,47 @@ func main() {
 	goalService := goals.NewService(goals.NewPostgresStore(pool))
 	profileHandler := profile.NewHandler(profile.NewService(profile.NewPostgresStore(pool), goalService), authenticate)
 	goalsHandler := goals.NewHandler(goalService, authenticate)
+	var objectStore storage.Store
+	var privateImages func(*http.ServeMux)
+	if cfg.StorageDriver == "s3" {
+		objectStore, err = storage.NewS3Store(storage.S3Config{Endpoint: cfg.S3Endpoint, Region: cfg.S3Region, Bucket: cfg.S3Bucket, AccessKey: cfg.S3AccessKey, SecretKey: cfg.S3SecretKey}, time.Now)
+		if err != nil {
+			logger.Error("invalid storage configuration", "error", err)
+			os.Exit(1)
+		}
+	} else {
+		filesystem := storage.NewFilesystemStore(cfg.StoragePath, []byte(cfg.ImageURLSecret), time.Now)
+		objectStore = filesystem
+		privateImages = func(mux *http.ServeMux) { mux.Handle("GET /v1/private-images/{key}", filesystem) }
+	}
+	idempotencyStore := idempotency.NewPostgresStore(pool)
+	analyzer := analysis.NewOpenAIAnalyzer(analysis.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIModel, Timeout: cfg.OpenAITimeout})
+	analysisHandler := analysis.NewHandler(analysis.NewService(analysis.NewPostgresStore(pool), objectStore, analyzer, idempotencyStore), authenticate)
+	mealService := meals.NewService(meals.NewPostgresStore(pool), idempotencyStore, objectStore)
+	mealHandler := meals.NewHandler(mealService, authenticate)
+	daysHandler := days.NewHandler(days.NewService(days.NewPostgresStore(pool), goals.NewPostgresStore(pool)), authenticate)
+	deletionWorker := storage.NewDeletionWorker(storage.NewPostgresDeletionRepository(pool), objectStore)
+	go func() {
+		for {
+			_, _ = deletionWorker.RunOnce(ctx)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(time.Minute):
+			}
+		}
+	}()
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {
 		logger.Error("listen failed", "error", err)
 		os.Exit(1)
 	}
 	logger.Info("api listening", "address", listener.Addr().String())
-	if err := app.Serve(ctx, app.NewServer(cfg, httpapi.NewRouter(logger, cfg.AllowedOrigins, authHandler.Register, profileHandler.Register, goalsHandler.Register)), listener); err != nil {
+	register := []func(*http.ServeMux){authHandler.Register, profileHandler.Register, goalsHandler.Register, analysisHandler.Register, mealHandler.Register, daysHandler.Register}
+	if privateImages != nil {
+		register = append(register, privateImages)
+	}
+	if err := app.Serve(ctx, app.NewServer(cfg, httpapi.NewRouter(logger, cfg.AllowedOrigins, register...)), listener); err != nil {
 		logger.Error("api stopped with error", "error", err)
 		os.Exit(1)
 	}

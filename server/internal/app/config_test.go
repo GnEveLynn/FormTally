@@ -3,6 +3,7 @@ package app
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -69,5 +70,31 @@ func TestLoadConfigRejectsTestSMSInProduction(t *testing.T) {
 	t.Setenv("SMS_DRIVER", "test")
 	if _, err := LoadConfig(); err == nil {
 		t.Fatal("test SMS driver accepted in production")
+	}
+}
+
+func TestLoadConfigRequiresPrivateS3InProductionAndParsesAISettings(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://formtally:formtally@127.0.0.1:5432/formtally?sslmode=disable")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("SMS_DRIVER", "test")
+	t.Setenv("STORAGE_DRIVER", "filesystem")
+	if _, err := LoadConfig(); err == nil {
+		t.Fatal("filesystem storage accepted in production")
+	}
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("STORAGE_DRIVER", "s3")
+	for name, value := range map[string]string{
+		"S3_ENDPOINT": "https://objects.example.com", "S3_REGION": "cn-east-1", "S3_BUCKET": "formtally-private",
+		"S3_ACCESS_KEY": "access", "S3_SECRET_KEY": "secret", "OPENAI_API_KEY": "key", "OPENAI_MODEL": "image-capable-model",
+		"OPENAI_TIMEOUT": "7s",
+	} {
+		t.Setenv(name, value)
+	}
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.S3Bucket != "formtally-private" || cfg.OpenAIModel != "image-capable-model" || cfg.OpenAITimeout != 7*time.Second {
+		t.Fatalf("config = %+v", cfg)
 	}
 }

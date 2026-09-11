@@ -1,0 +1,2 @@
+import{mount}from '@vue/test-utils';import{describe,expect,it}from'vitest';import NutritionProgress from './NutritionProgress.vue'
+describe('NutritionProgress',()=>{it('states the real overage in text',()=>{const wrapper=mount(NutritionProgress,{props:{label:'热量',unit:'千卡',progress:{consumed:2300,target:2000,remaining:0,overBy:300,percent:115,status:'over'}}});expect(wrapper.text()).toContain('2300 / 2000');expect(wrapper.text()).toContain('超出 300')})})
