@@ -70,26 +70,33 @@ func (s *PostgresStore) ConsumeCodeAndCreateSession(ctx context.Context, input C
 	if _, err := tx.Exec(ctx, `update login_codes set consumed_at=$2 where id=$1`, input.VerificationRequestID, now); err != nil {
 		return SessionResult{}, err
 	}
+	var hasProfile, hasGoal bool
+	if err := tx.QueryRow(ctx, `select exists(select 1 from profiles where user_id=$1),exists(select 1 from goal_settings where user_id=$1)`, userID).Scan(&hasProfile, &hasGoal); err != nil {
+		return SessionResult{}, err
+	}
 	if err := tx.Commit(ctx); err != nil {
 		return SessionResult{}, err
 	}
-	return sessionResult(userID, input.Phone, expires, input.TermsVersion, input.PrivacyVersion), nil
+	return sessionResult(userID, input.Phone, expires, input.TermsVersion, input.PrivacyVersion, onboardingStatus(hasProfile, hasGoal)), nil
 }
 
 func (s *PostgresStore) Session(ctx context.Context, hash []byte, now time.Time) (SessionResult, error) {
 	var userID, phone, terms, privacy string
 	var expires time.Time
+	var hasProfile, hasGoal bool
 	err := s.pool.QueryRow(ctx, `select u.id,u.phone,s.expires_at,
 		coalesce((select version from user_consents where user_id=u.id and kind='terms'),''),
-		coalesce((select version from user_consents where user_id=u.id and kind='privacy'),'')
-		from sessions s join users u on u.id=s.user_id where s.token_hash=$1 and s.revoked_at is null and s.expires_at>$2 and u.deleted_at is null`, hash, now).Scan(&userID, &phone, &expires, &terms, &privacy)
+		coalesce((select version from user_consents where user_id=u.id and kind='privacy'),''),
+		exists(select 1 from profiles where user_id=u.id),
+		exists(select 1 from goal_settings where user_id=u.id)
+		from sessions s join users u on u.id=s.user_id where s.token_hash=$1 and s.revoked_at is null and s.expires_at>$2 and u.deleted_at is null`, hash, now).Scan(&userID, &phone, &expires, &terms, &privacy, &hasProfile, &hasGoal)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return SessionResult{}, unauthenticated()
 	}
 	if err != nil {
 		return SessionResult{}, err
 	}
-	return sessionResult(userID, phone, expires, terms, privacy), nil
+	return sessionResult(userID, phone, expires, terms, privacy, onboardingStatus(hasProfile, hasGoal)), nil
 }
 
 func (s *PostgresStore) RevokeSession(ctx context.Context, hash []byte, now time.Time) error {
@@ -108,6 +115,16 @@ func invalidCode() error {
 }
 func randText() string { return rand.Text() }
 
-func sessionResult(id, phone string, expires time.Time, terms, privacy string) SessionResult {
-	return SessionResult{Session: SessionView{ExpiresAt: expires}, User: UserView{ID: id, PhoneMasked: phone[:3] + " " + phone[3:6] + "****" + phone[10:], OnboardingStatus: "profile_required"}, Consents: ConsentsView{TermsVersion: terms, PrivacyVersion: privacy, CurrentAIImageProcessingVersion: CurrentAIImageProcessingVersion}}
+func sessionResult(id, phone string, expires time.Time, terms, privacy, status string) SessionResult {
+	return SessionResult{Session: SessionView{ExpiresAt: expires}, User: UserView{ID: id, PhoneMasked: phone[:3] + " " + phone[3:6] + "****" + phone[10:], OnboardingStatus: status}, Consents: ConsentsView{TermsVersion: terms, PrivacyVersion: privacy, CurrentAIImageProcessingVersion: CurrentAIImageProcessingVersion}}
+}
+
+func onboardingStatus(hasProfile, hasGoal bool) string {
+	if !hasProfile {
+		return "profile_required"
+	}
+	if !hasGoal {
+		return "goal_required"
+	}
+	return "completed"
 }

@@ -49,6 +49,20 @@ func TestVerificationAndSessionLifecycle(t *testing.T) {
 	if err != nil || current.User.ID != created.User.ID {
 		t.Fatalf("GetSession() = %+v, %v", current, err)
 	}
+	if _, err := service.store.pool.Exec(ctx, `insert into profiles(user_id,biological_sex,birth_date,height_cm,weight_kg,activity_level,timezone,revision,updated_at) values($1,'male','1995-06-18',178,72.5,'moderate','Asia/Shanghai',1,now())`, created.User.ID); err != nil {
+		t.Fatal(err)
+	}
+	current, err = service.GetSession(ctx, token)
+	if err != nil || current.User.OnboardingStatus != "goal_required" {
+		t.Fatalf("profile session = %+v, %v", current, err)
+	}
+	if _, err := service.store.pool.Exec(ctx, `insert into goal_settings(user_id,mode,objective,pace,revision,updated_at) values($1,'automatic','maintain',null,1,now())`, created.User.ID); err != nil {
+		t.Fatal(err)
+	}
+	current, err = service.GetSession(ctx, token)
+	if err != nil || current.User.OnboardingStatus != "completed" {
+		t.Fatalf("completed session = %+v, %v", current, err)
+	}
 	if err := service.RevokeSession(ctx, token); err != nil {
 		t.Fatal(err)
 	}

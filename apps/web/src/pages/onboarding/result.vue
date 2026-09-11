@@ -1,0 +1,9 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'; import { useRouter } from 'vue-router'
+import GoalCalculation from '../../components/GoalCalculation.vue'; import { saveGoal } from '../../api/goals'; import { onboardingStore } from '../../stores/onboarding'; import { sessionStore } from '../../stores/session'
+const router=useRouter(); const preview=computed(()=>onboardingStore.preview.value); const busy=ref(false); const error=ref('')
+if (!preview.value) router.replace('/goals')
+async function confirm(){busy.value=true;error.value='';try{await saveGoal(onboardingStore.goalInput());if(sessionStore.state.data)sessionStore.state.data.user.onboardingStatus='completed';await router.replace('/today')}catch(e){error.value=e instanceof Error?e.message:'保存失败，请重试'}finally{busy.value=false}}
+</script>
+<template><main v-if="preview" class="page"><p>第 3 步，共 3 步</p><h1>你的每日目标</h1><div class="metrics"><strong>{{ preview.target.energyKcal }}<small> kcal</small></strong><span>蛋白质 {{ preview.target.proteinGrams }} g</span><span>碳水 {{ preview.target.carbGrams }} g</span><span>脂肪 {{ preview.target.fatGrams }} g</span></div><p v-for="warning in preview.warnings" :key="warning" class="warning">{{ warning }}</p><GoalCalculation v-if="preview.calculation" :calculation="preview.calculation"/><p v-else>手动目标不会应用自动计算公式。</p><p v-if="error" class="error" role="alert">{{ error }}</p><button type="button" :disabled="busy" @click="confirm">确认并进入今天</button></main></template>
+<style scoped>.page{width:min(100%,32rem);margin:auto;padding:1.5rem}.metrics{display:grid;gap:.8rem;padding:1.2rem;border-radius:1rem;background:#fff}.metrics strong{font-size:2rem}.metrics small{font-size:1rem}.warning,.error{color:#a22b2b}button{width:100%;min-height:52px;margin-top:1rem;border:0;border-radius:999px;background:var(--ft-color-text);color:#fff;font:inherit;font-weight:700}</style>

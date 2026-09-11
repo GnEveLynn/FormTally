@@ -2,7 +2,7 @@ package auth
 
 import "net/http"
 
-func sessionToken(r *http.Request) string {
+func SessionToken(r *http.Request) string {
 	cookie, err := r.Cookie(SessionCookieName)
 	if err != nil {
 		return ""

@@ -71,4 +71,9 @@ describe('启动路由', () => {
     expect(await guardRoute('/today', true, profileRequired)).toBe('/profile')
     expect(await guardRoute('/today', true, completed)).toBe(true)
   })
+
+	 it('目标设置用户可以进入目标结果子页面', async () => {
+		 const store = createSessionStore({ getSession: vi.fn().mockResolvedValue(session('goal_required')) })
+		 expect(await guardRoute('/goals/result', true, store)).toBe(true)
+	 })
 })

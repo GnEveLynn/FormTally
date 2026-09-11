@@ -4,14 +4,17 @@ import (
 	"context"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/GnEveLynn/FormTally/server/internal/app"
 	"github.com/GnEveLynn/FormTally/server/internal/auth"
+	"github.com/GnEveLynn/FormTally/server/internal/goals"
 	"github.com/GnEveLynn/FormTally/server/internal/httpapi"
 	"github.com/GnEveLynn/FormTally/server/internal/postgres"
+	"github.com/GnEveLynn/FormTally/server/internal/profile"
 	"github.com/GnEveLynn/FormTally/server/internal/sms"
 )
 
@@ -34,14 +37,22 @@ func main() {
 	if cfg.Environment == "development" && cfg.SMSDriver == "test" {
 		smsLogger = logger
 	}
-	authHandler := auth.NewHandler(auth.NewService(auth.NewPostgresStore(pool), sms.NewTestSender(smsLogger)))
+	authService := auth.NewService(auth.NewPostgresStore(pool), sms.NewTestSender(smsLogger))
+	authenticate := func(r *http.Request) (string, error) {
+		session, err := authService.GetSession(r.Context(), auth.SessionToken(r))
+		return session.User.ID, err
+	}
+	authHandler := auth.NewHandler(authService)
+	goalService := goals.NewService(goals.NewPostgresStore(pool))
+	profileHandler := profile.NewHandler(profile.NewService(profile.NewPostgresStore(pool), goalService), authenticate)
+	goalsHandler := goals.NewHandler(goalService, authenticate)
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {
 		logger.Error("listen failed", "error", err)
 		os.Exit(1)
 	}
 	logger.Info("api listening", "address", listener.Addr().String())
-	if err := app.Serve(ctx, app.NewServer(cfg, httpapi.NewRouter(logger, cfg.AllowedOrigins, authHandler.Register)), listener); err != nil {
+	if err := app.Serve(ctx, app.NewServer(cfg, httpapi.NewRouter(logger, cfg.AllowedOrigins, authHandler.Register, profileHandler.Register, goalsHandler.Register)), listener); err != nil {
 		logger.Error("api stopped with error", "error", err)
 		os.Exit(1)
 	}

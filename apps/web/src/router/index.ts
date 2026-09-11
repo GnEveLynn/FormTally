@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import IndexPage from '../pages/index/index.vue'
 import LoginPage from '../pages/login/index.vue'
+import GoalPage from '../pages/onboarding/goal.vue'
+import ProfilePage from '../pages/onboarding/profile.vue'
+import ResultPage from '../pages/onboarding/result.vue'
 import ProtectedPage from '../pages/protected/index.vue'
 import WelcomePage from '../pages/welcome/index.vue'
 import { sessionStore } from '../stores/session'
@@ -12,8 +15,9 @@ export const router = createRouter({
     { path: '/', component: IndexPage },
     { path: '/welcome', component: WelcomePage },
     { path: '/login', component: LoginPage },
-    { path: '/profile', component: ProtectedPage, props: { title: '完善身体资料', description: '资料填写将在下一阶段接入。' }, meta: { requiresAuth: true } },
-    { path: '/goals', component: ProtectedPage, props: { title: '设置营养目标', description: '目标设置将在下一阶段接入。' }, meta: { requiresAuth: true } },
+    { path: '/profile', component: ProfilePage, meta: { requiresAuth: true } },
+    { path: '/goals', component: GoalPage, meta: { requiresAuth: true } },
+    { path: '/goals/result', component: ResultPage, meta: { requiresAuth: true } },
     { path: '/today', component: ProtectedPage, props: { title: '今天', description: '登录状态已恢复。', allowLogout: true }, meta: { requiresAuth: true } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

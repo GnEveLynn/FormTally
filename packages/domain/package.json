@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./phone": "./src/phone.ts"
+    "./phone": "./src/phone.ts",
+    "./profile-validation": "./src/profile-validation.ts"
   }
 }

@@ -5,6 +5,8 @@
   "type": "module",
   "exports": {
     "./auth": "./src/auth.ts",
-    "./errors": "./src/errors.ts"
+    "./errors": "./src/errors.ts",
+    "./goals": "./src/goals.ts",
+    "./profile": "./src/profile.ts"
   }
 }

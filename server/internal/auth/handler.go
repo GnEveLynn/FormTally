@@ -58,7 +58,7 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
-	result, err := h.service.GetSession(r.Context(), sessionToken(r))
+	result, err := h.service.GetSession(r.Context(), SessionToken(r))
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
@@ -67,7 +67,7 @@ func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deleteSession(w http.ResponseWriter, r *http.Request) {
-	if err := h.service.RevokeSession(r.Context(), sessionToken(r)); err != nil {
+	if err := h.service.RevokeSession(r.Context(), SessionToken(r)); err != nil {
 		writeServiceError(w, r, err)
 		return
 	}
