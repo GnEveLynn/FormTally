@@ -7,14 +7,18 @@
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview",
-    "test:unit": "vitest run"
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@formtally/api-contract": "0.0.0",
     "vue": "^3.5.41",
     "vue-router": "^4.6.4",
-    "@formtally/design-tokens": "0.0.0"
+    "@formtally/design-tokens": "0.0.0",
+    "@formtally/domain": "0.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/node": "^24.13.3",
     "@vitejs/plugin-vue": "^6.0.8",
     "@vue/tsconfig": "^0.9.1",

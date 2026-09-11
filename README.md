@@ -39,6 +39,6 @@ make dev-api
 make verify
 ```
 
-`verify` 执行 Go 测试、真实 PostgreSQL 集成测试、H5 单元测试、TypeScript 检查及生产构建。也可分别使用 `make test-go`、`make test-db`、`make test-web`、`npm run build:web`。
+`verify` 执行 Go 测试、真实 PostgreSQL 集成测试、H5 单元与浏览器旅程测试、TypeScript 检查及生产构建。也可分别使用 `make test-go`、`make test-db`、`make test-web`、`make test-e2e`、`npm run build:web`。
 
-`make migrate-down` 回滚当前数据库迁移。`make test-e2e` 将在 Task 4 接入 H5 业务流程测试，目前会返回非零状态并说明原因。
+`make migrate-down` 回滚当前数据库迁移。Playwright 默认复用本机 Chrome 运行 H5 浏览器旅程。

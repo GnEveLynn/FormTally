@@ -35,9 +35,7 @@ test-web:
 	npm --prefix apps/web run test:unit -- --run
 
 test-e2e:
-	@echo "H5 journey tests will be available in Task 4." >&2
-	@exit 2
+	npm --prefix apps/web run test:e2e
 
-# Expand this gate when browser journey suites are implemented.
-verify: test-go test-db test-web
+verify: test-go test-db test-web test-e2e
 	npm --prefix apps/web run build

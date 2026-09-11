@@ -1,0 +1,9 @@
+{
+  "name": "@formtally/domain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./phone": "./src/phone.ts"
+  }
+}
