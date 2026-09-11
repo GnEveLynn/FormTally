@@ -2,20 +2,27 @@ package sms
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 )
 
 type TestSender struct {
-	mu    sync.RWMutex
-	codes map[string]string
+	mu     sync.RWMutex
+	codes  map[string]string
+	logger *slog.Logger
 }
 
-func NewTestSender() *TestSender { return &TestSender{codes: make(map[string]string)} }
+func NewTestSender(logger *slog.Logger) *TestSender {
+	return &TestSender{codes: make(map[string]string), logger: logger}
+}
 
 func (s *TestSender) Send(_ context.Context, phone, purpose, code string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.codes[phone+"\x00"+purpose] = code
+	if s.logger != nil {
+		s.logger.Info("test SMS code", "phone", phone, "purpose", purpose, "code", code)
+	}
 	return nil
 }
 

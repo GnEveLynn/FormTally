@@ -30,7 +30,11 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
-	authHandler := auth.NewHandler(auth.NewService(auth.NewPostgresStore(pool), sms.NewTestSender()))
+	var smsLogger *slog.Logger
+	if cfg.Environment == "development" && cfg.SMSDriver == "test" {
+		smsLogger = logger
+	}
+	authHandler := auth.NewHandler(auth.NewService(auth.NewPostgresStore(pool), sms.NewTestSender(smsLogger)))
 	listener, err := net.Listen("tcp", cfg.HTTPAddr)
 	if err != nil {
 		logger.Error("listen failed", "error", err)

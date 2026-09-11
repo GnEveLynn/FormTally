@@ -68,7 +68,7 @@ func testService(t *testing.T) (*Service, *sms.TestSender) {
 		t.Fatal(err)
 	}
 	t.Cleanup(pool.Close)
-	sender := sms.NewTestSender()
+	sender := sms.NewTestSender(nil)
 	return NewService(NewPostgresStore(pool), sender), sender
 }
 
