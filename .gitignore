@@ -8,4 +8,7 @@ coverage/
 playwright-report/
 test-results/
 server/bin/
+build/
+testdata/ai-quality/images/
+testdata/ai-quality/*.private.json
 .DS_Store

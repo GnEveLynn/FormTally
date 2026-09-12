@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"flag"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -27,10 +29,19 @@ import (
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	checkConfig, err := parseArgs(os.Args[1:])
+	if err != nil {
+		logger.Error("invalid arguments", "error", err)
+		os.Exit(2)
+	}
 	cfg, err := app.LoadConfig()
 	if err != nil {
 		logger.Error("invalid configuration", "error", err)
 		os.Exit(1)
+	}
+	if checkConfig {
+		logger.Info("configuration valid")
+		return
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -99,4 +110,17 @@ func main() {
 		os.Exit(1)
 	}
 	logger.Info("api stopped")
+}
+
+func parseArgs(args []string) (bool, error) {
+	flags := flag.NewFlagSet("formtally-api", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	checkConfig := flags.Bool("check-config", false, "validate configuration and exit")
+	if err := flags.Parse(args); err != nil {
+		return false, err
+	}
+	if flags.NArg() != 0 {
+		return false, flag.ErrHelp
+	}
+	return *checkConfig, nil
 }

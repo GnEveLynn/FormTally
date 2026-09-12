@@ -1,0 +1,27 @@
+{
+  "version": "v1",
+  "model": "replace-with-OPENAI_MODEL",
+  "promptVersion": "meal_analysis_v1",
+  "evaluatedAt": "2026-09-13T01:00:00Z",
+  "samples": [
+    {
+      "id": "example-mixed-meal-001",
+      "imagePath": "images/example-mixed-meal-001.jpg",
+      "category": "mixed_meal",
+      "hiddenOil": true,
+      "weighedGrams": 420,
+      "reference": {
+        "energyKcal": 650,
+        "proteinGrams": 32,
+        "carbGrams": 78,
+        "fatGrams": 24
+      },
+      "evaluation": {
+        "structured": true,
+        "estimatedEnergyKcal": 700,
+        "durationMs": 8200,
+        "costUsd": 0.012
+      }
+    }
+  ]
+}

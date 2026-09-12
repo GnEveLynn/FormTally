@@ -1,0 +1,14 @@
+.git
+.env
+.env.*
+!.env.example
+node_modules
+apps/web/dist
+build
+coverage
+playwright-report
+test-results
+testdata/ai-quality/images
+testdata/ai-quality/*.private.json
+**/*.log
+**/.DS_Store
