@@ -1,0 +1,23 @@
+[
+  {"method":"POST","path":"/v1/auth/codes","body":"{}","status":422},
+  {"method":"POST","path":"/v1/auth/sessions","body":"{}","status":409},
+  {"method":"GET","path":"/v1/auth/session","status":401},
+  {"method":"DELETE","path":"/v1/auth/session","status":401},
+  {"method":"GET","path":"/v1/profile","status":401},
+  {"method":"PUT","path":"/v1/profile","body":"{}","status":401},
+  {"method":"GET","path":"/v1/goals","status":401},
+  {"method":"POST","path":"/v1/goal-previews","body":"{}","status":401},
+  {"method":"PUT","path":"/v1/goals","body":"{}","status":401},
+  {"method":"POST","path":"/v1/meal-analyses","status":401},
+  {"method":"GET","path":"/v1/meal-analyses/analysis_fixture","status":401},
+  {"method":"POST","path":"/v1/meal-analyses/analysis_fixture/retry","body":"{}","status":401},
+  {"method":"DELETE","path":"/v1/meal-analyses/analysis_fixture?expectedRevision=1","status":401},
+  {"method":"POST","path":"/v1/meals","body":"{}","status":401},
+  {"method":"GET","path":"/v1/meals/meal_fixture","status":401},
+  {"method":"PATCH","path":"/v1/meals/meal_fixture","body":"{}","status":401},
+  {"method":"DELETE","path":"/v1/meals/meal_fixture/image?expectedRevision=1","status":401},
+  {"method":"DELETE","path":"/v1/meals/meal_fixture?expectedRevision=1","status":401},
+  {"method":"GET","path":"/v1/days/2026-09-11","status":401},
+  {"method":"GET","path":"/v1/history?month=2026-09","status":401},
+  {"method":"POST","path":"/v1/account-deletions","body":"{}","status":401}
+]

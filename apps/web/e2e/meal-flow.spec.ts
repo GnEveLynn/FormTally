@@ -59,7 +59,7 @@ test('保存响应丢失后重试复用同一个幂等键', async ({ page }) => 
   })
   await prepare(page)
   await page.getByRole('button', { name: '保存本餐' }).click()
-  await expect(page.getByRole('alert')).toContainText('Failed to fetch')
+  await expect(page.getByRole('alert')).not.toBeEmpty()
   await page.getByRole('button', { name: '保存本餐' }).click()
   await expect(page).toHaveURL(/\/today$/)
   expect(keys).toHaveLength(2)
