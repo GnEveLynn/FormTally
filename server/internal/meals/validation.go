@@ -28,3 +28,18 @@ func ValidateCreate(input CreateInput, now time.Time) error {
 func finiteRange(value, min, max float64) bool {
 	return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= min && value <= max
 }
+
+func validateUpdateItemIDs(current []Item, updated []ItemInput) error {
+	owned := make(map[string]struct{}, len(current))
+	for _, item := range current {
+		owned[item.ID] = struct{}{}
+	}
+	for _, item := range updated {
+		if item.ID != nil {
+			if _, ok := owned[*item.ID]; !ok {
+				return ErrValidation
+			}
+		}
+	}
+	return nil
+}

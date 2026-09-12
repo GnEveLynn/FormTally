@@ -15,7 +15,10 @@ import (
 
 func TestAuthHTTPJourney(t *testing.T) {
 	service, sender := testService(t)
-	authHandler := NewHandler(service)
+	authHandler := NewHandler(service, func(r *http.Request) (string, error) {
+		current, err := service.GetSession(r.Context(), SessionToken(r))
+		return current.User.ID, err
+	})
 	router := httpapi.NewRouter(slog.New(slog.NewTextHandler(io.Discard, nil)), []string{"http://127.0.0.1:5173"}, authHandler.Register)
 	phone := "+8613812345678"
 
@@ -42,6 +45,18 @@ func TestAuthHTTPJourney(t *testing.T) {
 	current := performJSON(router, http.MethodGet, "/v1/auth/session", "", cookie.Value, false)
 	if current.Code != http.StatusOK {
 		t.Fatalf("current session = %d %s", current.Code, current.Body.String())
+	}
+	deleteCodeWithoutSession := performJSON(router, http.MethodPost, "/v1/auth/codes", `{"phone":"+8613812345678","purpose":"delete_account"}`, "", true)
+	if deleteCodeWithoutSession.Code != http.StatusUnauthorized {
+		t.Fatalf("delete code without session = %d %s", deleteCodeWithoutSession.Code, deleteCodeWithoutSession.Body.String())
+	}
+	deleteCodeWrongPhone := performJSON(router, http.MethodPost, "/v1/auth/codes", `{"phone":"+8613912345678","purpose":"delete_account"}`, cookie.Value, true)
+	if deleteCodeWrongPhone.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("delete code wrong phone = %d %s", deleteCodeWrongPhone.Code, deleteCodeWrongPhone.Body.String())
+	}
+	deleteCode := performJSON(router, http.MethodPost, "/v1/auth/codes", `{"phone":"+8613812345678","purpose":"delete_account"}`, cookie.Value, true)
+	if deleteCode.Code != http.StatusAccepted {
+		t.Fatalf("delete code current phone = %d %s", deleteCode.Code, deleteCode.Body.String())
 	}
 	logout := performJSON(router, http.MethodDelete, "/v1/auth/session", "", cookie.Value, true)
 	if logout.Code != http.StatusNoContent || logout.Result().Cookies()[0].MaxAge >= 0 {

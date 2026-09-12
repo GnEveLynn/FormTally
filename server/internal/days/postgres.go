@@ -9,6 +9,11 @@ import (
 type PostgresStore struct{ pool *pgxpool.Pool }
 
 func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore { return &PostgresStore{pool: pool} }
+func (s *PostgresStore) Timezone(ctx context.Context, userID string) (string, error) {
+	var timezone string
+	err := s.pool.QueryRow(ctx, `select timezone from profiles where user_id=$1`, userID).Scan(&timezone)
+	return timezone, err
+}
 func (s *PostgresStore) Meals(ctx context.Context, userID, date string) ([]meals.Meal, error) {
 	rows, err := s.pool.Query(ctx, `select m.id,m.occurred_at,m.meal_type,coalesce(sum(i.energy_kcal),0)::int,coalesce(sum(i.protein_grams),0),coalesce(sum(i.carb_grams),0),coalesce(sum(i.fat_grams),0) from meals m join meal_items i on i.meal_id=m.id where m.user_id=$1 and m.local_date=$2 group by m.id order by m.occurred_at`, userID, date)
 	if err != nil {

@@ -40,7 +40,7 @@ func (h *Handler) history(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	month := h.service.ResolveMonth(r.URL.Query().Get("month"))
-	days, err := h.service.History(r.Context(), user, month)
+	view, err := h.service.History(r.Context(), user, month)
 	if errors.Is(err, ErrInvalidDate) {
 		httpapi.WriteError(w, r, 400, "INVALID_REQUEST", "月份无效")
 		return
@@ -49,7 +49,7 @@ func (h *Handler) history(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, r, 500, "INTERNAL_ERROR", "服务暂时不可用")
 		return
 	}
-	httpapi.WriteJSON(w, 200, map[string]any{"month": month, "days": days})
+	httpapi.WriteJSON(w, 200, view)
 }
 func (h *Handler) user(w http.ResponseWriter, r *http.Request) (string, bool) {
 	user, err := h.authenticate(r)

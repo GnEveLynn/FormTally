@@ -9,6 +9,10 @@ export function requestLoginCode(phone: string): Promise<VerificationResponse> {
   })
 }
 
+export function requestDeleteCode(phone: string): Promise<VerificationResponse> {
+  return http('/v1/auth/codes', { method: 'POST', body: JSON.stringify({ phone, purpose: 'delete_account' }) })
+}
+
 export function login(input: LoginRequest): Promise<SessionResponse> {
   return http('/v1/auth/sessions', { method: 'POST', body: JSON.stringify(input) })
 }

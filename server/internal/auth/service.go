@@ -28,11 +28,27 @@ func NewService(store *PostgresStore, sender sms.Sender) *Service {
 func validMainlandPhone(phone string) bool { return mainlandPhone.MatchString(phone) }
 
 func (s *Service) RequestCode(ctx context.Context, input RequestCodeInput) (Verification, error) {
+	return s.RequestCodeForUser(ctx, "", input)
+}
+
+func (s *Service) RequestCodeForUser(ctx context.Context, userID string, input RequestCodeInput) (Verification, error) {
 	if !validMainlandPhone(input.Phone) {
 		return Verification{}, &Error{Code: "PHONE_UNSUPPORTED", Message: "请输入有效的中国大陆手机号", Status: http.StatusUnprocessableEntity}
 	}
 	if input.Purpose != PurposeLogin && input.Purpose != PurposeDeleteAccount {
 		return Verification{}, &Error{Code: "VALIDATION_FAILED", Message: "验证码用途无效", Status: http.StatusUnprocessableEntity}
+	}
+	if input.Purpose == PurposeDeleteAccount {
+		if userID == "" {
+			return Verification{}, unauthenticated()
+		}
+		owned, err := s.store.UserOwnsPhone(ctx, userID, input.Phone)
+		if err != nil {
+			return Verification{}, err
+		}
+		if !owned {
+			return Verification{}, &Error{Code: "PHONE_MISMATCH", Message: "手机号与当前账户不一致", Status: http.StatusUnprocessableEntity}
+		}
 	}
 	now := s.now().UTC()
 	if retryAt, ok, err := s.store.RetryAt(ctx, input.Phone, input.Purpose); err != nil {
@@ -85,11 +101,12 @@ func (s *Service) RevokeSession(ctx context.Context, token string) error {
 	return s.store.RevokeSession(ctx, tokenHash(token), s.now().UTC())
 }
 
-func codeHash(id, code string) []byte {
+func VerificationCodeHash(id, code string) []byte {
 	sum := sha256.Sum256([]byte(id + "\x00" + code))
 	return sum[:]
 }
-func tokenHash(token string) []byte { sum := sha256.Sum256([]byte(token)); return sum[:] }
+func codeHash(id, code string) []byte { return VerificationCodeHash(id, code) }
+func tokenHash(token string) []byte   { sum := sha256.Sum256([]byte(token)); return sum[:] }
 func unauthenticated() error {
 	return &Error{Code: "UNAUTHENTICATED", Message: "请先登录", Status: http.StatusUnauthorized}
 }

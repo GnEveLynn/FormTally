@@ -14,6 +14,7 @@ var ErrInvalidDate = errors.New("invalid or future date")
 type Repository interface {
 	Meals(context.Context, string, string) ([]meals.Meal, error)
 	History(context.Context, string, string) ([]HistoryDay, error)
+	Timezone(context.Context, string) (string, error)
 }
 type TargetProvider interface {
 	Target(context.Context, string, string) (*goals.EffectiveTarget, error)
@@ -30,25 +31,34 @@ func NewService(repo Repository, targets TargetProvider) *Service {
 }
 func (s *Service) Get(ctx context.Context, userID, date string) (View, error) {
 	parsed, err := time.Parse("2006-01-02", date)
-	if err != nil || parsed.Format("2006-01-02") > s.now().Format("2006-01-02") {
+	timezone, timezoneErr := s.repo.Timezone(ctx, userID)
+	if timezoneErr != nil {
+		return View{}, timezoneErr
+	}
+	location, locationErr := time.LoadLocation(timezone)
+	if locationErr != nil {
+		return View{}, locationErr
+	}
+	today := s.now().In(location).Format("2006-01-02")
+	if err != nil || parsed.Format("2006-01-02") > today {
 		return View{}, ErrInvalidDate
+	}
+	records, err := s.repo.Meals(ctx, userID, date)
+	if err != nil {
+		return View{}, err
 	}
 	target, err := s.targets.Target(ctx, userID, date)
 	if err != nil {
 		return View{}, err
 	}
-	if target == nil {
+	if target == nil && (date == today || len(records) > 0) {
 		copied, e := s.targets.CopyLatestTarget(ctx, userID, date, s.now())
 		if e != nil {
 			return View{}, e
 		}
 		target = &copied
 	}
-	records, err := s.repo.Meals(ctx, userID, date)
-	if err != nil {
-		return View{}, err
-	}
-	view := View{LocalDate: date, Target: target.Target, MealGroups: []MealGroup{}}
+	view := View{LocalDate: date, MealGroups: []MealGroup{}}
 	groups := map[string][]MealSummary{}
 	for _, meal := range records {
 		view.Totals.EnergyKcal += meal.Totals.EnergyKcal
@@ -65,15 +75,37 @@ func (s *Service) Get(ctx context.Context, userID, date string) (View, error) {
 			view.MealGroups = append(view.MealGroups, MealGroup{MealType: kind, Meals: list})
 		}
 	}
-	view.Progress = Progress{Energy: metric(float64(view.Totals.EnergyKcal), float64(view.Target.EnergyKcal)), Protein: metric(view.Totals.ProteinGrams, float64(view.Target.ProteinGrams)), Carb: metric(view.Totals.CarbGrams, float64(view.Target.CarbGrams)), Fat: metric(view.Totals.FatGrams, float64(view.Target.FatGrams))}
+	if target != nil {
+		view.Target = &target.Target
+		view.Progress = &Progress{Energy: metric(float64(view.Totals.EnergyKcal), float64(target.Target.EnergyKcal)), Protein: metric(view.Totals.ProteinGrams, float64(target.Target.ProteinGrams)), Carb: metric(view.Totals.CarbGrams, float64(target.Target.CarbGrams)), Fat: metric(view.Totals.FatGrams, float64(target.Target.FatGrams))}
+	}
 	return view, nil
 }
-func (s *Service) History(ctx context.Context, userID, month string) ([]HistoryDay, error) {
+func (s *Service) History(ctx context.Context, userID, month string) (HistoryView, error) {
 	month = s.ResolveMonth(month)
 	if _, err := time.Parse("2006-01", month); err != nil {
-		return nil, ErrInvalidDate
+		return HistoryView{}, ErrInvalidDate
 	}
-	return s.repo.History(ctx, userID, month)
+	timezone, err := s.repo.Timezone(ctx, userID)
+	if err != nil {
+		return HistoryView{}, err
+	}
+	days, err := s.repo.History(ctx, userID, month)
+	if err != nil {
+		return HistoryView{}, err
+	}
+	location, err := time.LoadLocation(timezone)
+	if err != nil {
+		return HistoryView{}, err
+	}
+	today := s.now().In(location).Format("2006-01-02")
+	visible := days[:0]
+	for _, day := range days {
+		if day.LocalDate <= today {
+			visible = append(visible, day)
+		}
+	}
+	return HistoryView{Month: month, Timezone: timezone, Days: visible}, nil
 }
 
 func (s *Service) ResolveMonth(month string) string {

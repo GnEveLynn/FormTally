@@ -29,7 +29,7 @@ test-go:
 	cd server && go test ./...
 
 test-db:
-	cd server && TEST_DATABASE_URL="$(TEST_DATABASE_URL)" go test ./internal/postgres ./internal/auth ./internal/profile ./internal/goals ./internal/idempotency ./internal/analysis ./internal/meals ./internal/days -count=1
+	cd server && TEST_DATABASE_URL="$(TEST_DATABASE_URL)" go test -p 1 ./internal/postgres ./internal/auth ./internal/profile ./internal/goals ./internal/idempotency ./internal/analysis ./internal/meals ./internal/days ./internal/account -count=1
 
 test-web:
 	npm --prefix apps/web run test:unit -- --run

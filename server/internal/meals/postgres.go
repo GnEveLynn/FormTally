@@ -133,6 +133,9 @@ func (s *PostgresStore) Update(ctx context.Context, userID, id string, input Upd
 	}
 	items := currentInputs(current.Items)
 	if input.Items != nil {
+		if err = validateUpdateItemIDs(current.Items, *input.Items); err != nil {
+			return Meal{}, nil, err
+		}
 		items = *input.Items
 	}
 	if err = ValidateCreate(CreateInput{OccurredAt: current.OccurredAt.Format(time.RFC3339), MealType: current.MealType, Items: items}, now); err != nil {
@@ -243,7 +246,11 @@ func insertItems(ctx context.Context, tx pgx.Tx, mealID string, items []ItemInpu
 		if item.BasisPer100Grams == nil {
 			basis = nil
 		}
-		if _, err := tx.Exec(ctx, `insert into meal_items(id,meal_id,position,draft_item_id,name,grams,energy_kcal,protein_grams,carb_grams,fat_grams,basis_per_100_grams,origin,confidence,assumption) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`, `item_`+rand.Text(), mealID, position, item.DraftItemID, strings.TrimSpace(item.Name), item.Grams, item.Nutrition.EnergyKcal, item.Nutrition.ProteinGrams, item.Nutrition.CarbGrams, item.Nutrition.FatGrams, basis, origin, item.Confidence, item.Assumption); err != nil {
+		id := "item_" + rand.Text()
+		if item.ID != nil {
+			id = *item.ID
+		}
+		if _, err := tx.Exec(ctx, `insert into meal_items(id,meal_id,position,draft_item_id,name,grams,energy_kcal,protein_grams,carb_grams,fat_grams,basis_per_100_grams,origin,confidence,assumption) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`, id, mealID, position, item.DraftItemID, strings.TrimSpace(item.Name), item.Grams, item.Nutrition.EnergyKcal, item.Nutrition.ProteinGrams, item.Nutrition.CarbGrams, item.Nutrition.FatGrams, basis, origin, item.Confidence, item.Assumption); err != nil {
 			return err
 		}
 	}

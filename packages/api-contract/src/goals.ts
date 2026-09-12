@@ -4,3 +4,4 @@ export type GoalSettingsInput = { mode: 'automatic'; automatic: { objective: 'fa
 export interface EffectiveTarget { effectiveFrom?: string; localDate?: string; target: NutritionTarget; calculation: GoalCalculation | null; warnings: string[] }
 export interface PreviewResponse { preview: EffectiveTarget }
 export interface SaveGoalResponse { settings: GoalSettingsInput & { revision: number; updatedAt: string }; effectiveTarget: EffectiveTarget }
+export interface GoalsResponse { settings: (GoalSettingsInput & { revision: number; updatedAt: string }) | null; activeTarget: EffectiveTarget | null; pendingTarget: EffectiveTarget | null }
