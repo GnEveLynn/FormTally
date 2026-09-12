@@ -4,11 +4,13 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./account": "./src/account.ts",
     "./analyses": "./src/analyses.ts",
     "./auth": "./src/auth.ts",
     "./days": "./src/days.ts",
     "./errors": "./src/errors.ts",
     "./goals": "./src/goals.ts",
+    "./history": "./src/history.ts",
     "./meals": "./src/meals.ts",
     "./profile": "./src/profile.ts"
   }

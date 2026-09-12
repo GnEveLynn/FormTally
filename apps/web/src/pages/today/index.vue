@@ -18,12 +18,12 @@ onMounted(load)
 
 <template>
   <main class="today">
-    <header><div><p>FORMTALLY</p><h1>今天</h1></div><div class="actions"><a class="add" href="/meals/new">＋ 记录一餐</a><button class="logout" type="button" @click="signOut">退出登录</button></div></header>
+    <header><div><p>FORMTALLY</p><h1>今天</h1></div><div class="actions"><RouterLink to="/history">历史</RouterLink><RouterLink to="/me">我的</RouterLink><a class="add" href="/meals/new">＋ 记录一餐</a><button class="logout" type="button" @click="signOut">退出登录</button></div></header>
     <p class="date">{{ localDate }}</p>
     <p v-if="todayStore.state.status === 'loading'" role="status">正在加载今天的记录…</p>
     <section v-else-if="todayStore.state.status === 'error'" class="state"><h2>暂时无法加载</h2><p role="alert">{{ todayStore.state.error }}</p><button @click="load">重试</button></section>
     <template v-else-if="todayStore.state.day">
-      <section class="progress-grid" aria-label="今日营养进度">
+      <section v-if="todayStore.state.day.progress" class="progress-grid" aria-label="今日营养进度">
         <NutritionProgress label="热量" unit="千卡" :progress="todayStore.state.day.progress.energy" />
         <NutritionProgress label="蛋白质" unit="克" :progress="todayStore.state.day.progress.protein" />
         <NutritionProgress label="碳水" unit="克" :progress="todayStore.state.day.progress.carb" />

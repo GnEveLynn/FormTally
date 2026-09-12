@@ -10,6 +10,13 @@ import ProfilePage from '../pages/onboarding/profile.vue'
 import ResultPage from '../pages/onboarding/result.vue'
 import TodayPage from '../pages/today/index.vue'
 import WelcomePage from '../pages/welcome/index.vue'
+import HistoryPage from '../pages/history/index.vue'
+import MealDetailPage from '../pages/meal/detail.vue'
+import MealEditPage from '../pages/meal/edit.vue'
+import MePage from '../pages/me/index.vue'
+import MeProfilePage from '../pages/me/profile.vue'
+import MeGoalsPage from '../pages/me/goals.vue'
+import DeleteAccountPage from '../pages/me/delete-account.vue'
 import { sessionStore } from '../stores/session'
 import { guardRoute } from './boot'
 
@@ -23,10 +30,17 @@ export const router = createRouter({
     { path: '/goals', component: GoalPage, meta: { requiresAuth: true } },
     { path: '/goals/result', component: ResultPage, meta: { requiresAuth: true } },
     { path: '/today', component: TodayPage, meta: { requiresAuth: true } },
+    { path: '/history', component: HistoryPage, meta: { requiresAuth: true } },
+    { path: '/me', component: MePage, meta: { requiresAuth: true } },
+    { path: '/me/profile', component: MeProfilePage, meta: { requiresAuth: true } },
+    { path: '/me/goals', component: MeGoalsPage, meta: { requiresAuth: true } },
+    { path: '/me/delete-account', component: DeleteAccountPage, meta: { requiresAuth: true } },
     { path: '/meals/new', component: CapturePage, meta: { requiresAuth: true } },
     { path: '/meals/analyzing', component: AnalyzingPage, meta: { requiresAuth: true } },
     { path: '/meals/confirm', component: ConfirmPage, meta: { requiresAuth: true } },
     { path: '/meals/manual', component: ManualPage, meta: { requiresAuth: true } },
+    { path: '/meals/:id', component: MealDetailPage, meta: { requiresAuth: true } },
+    { path: '/meals/:id/edit', component: MealEditPage, meta: { requiresAuth: true } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })

@@ -16,6 +16,12 @@ type PostgresStore struct{ pool *pgxpool.Pool }
 
 func NewPostgresStore(pool *pgxpool.Pool) *PostgresStore { return &PostgresStore{pool: pool} }
 
+func (s *PostgresStore) UserOwnsPhone(ctx context.Context, userID, phone string) (bool, error) {
+	var owned bool
+	err := s.pool.QueryRow(ctx, `select exists(select 1 from users where id=$1 and phone=$2 and deleted_at is null)`, userID, phone).Scan(&owned)
+	return owned, err
+}
+
 func (s *PostgresStore) RetryAt(ctx context.Context, phone string, purpose Purpose) (time.Time, bool, error) {
 	var retry time.Time
 	err := s.pool.QueryRow(ctx, `select retry_after from login_codes where phone=$1 and purpose=$2 order by created_at desc limit 1`, phone, purpose).Scan(&retry)

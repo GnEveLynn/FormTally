@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/GnEveLynn/FormTally/server/internal/account"
 	"github.com/GnEveLynn/FormTally/server/internal/analysis"
 	"github.com/GnEveLynn/FormTally/server/internal/app"
 	"github.com/GnEveLynn/FormTally/server/internal/auth"
@@ -48,7 +49,7 @@ func main() {
 		session, err := authService.GetSession(r.Context(), auth.SessionToken(r))
 		return session.User.ID, err
 	}
-	authHandler := auth.NewHandler(authService)
+	authHandler := auth.NewHandler(authService, authenticate)
 	goalService := goals.NewService(goals.NewPostgresStore(pool))
 	profileHandler := profile.NewHandler(profile.NewService(profile.NewPostgresStore(pool), goalService), authenticate)
 	goalsHandler := goals.NewHandler(goalService, authenticate)
@@ -71,6 +72,7 @@ func main() {
 	mealService := meals.NewService(meals.NewPostgresStore(pool), idempotencyStore, objectStore)
 	mealHandler := meals.NewHandler(mealService, authenticate)
 	daysHandler := days.NewHandler(days.NewService(days.NewPostgresStore(pool), goals.NewPostgresStore(pool)), authenticate)
+	accountHandler := account.NewHandler(account.NewService(account.NewPostgresStore(pool)), authenticate)
 	deletionWorker := storage.NewDeletionWorker(storage.NewPostgresDeletionRepository(pool), objectStore)
 	go func() {
 		for {
@@ -88,7 +90,7 @@ func main() {
 		os.Exit(1)
 	}
 	logger.Info("api listening", "address", listener.Addr().String())
-	register := []func(*http.ServeMux){authHandler.Register, profileHandler.Register, goalsHandler.Register, analysisHandler.Register, mealHandler.Register, daysHandler.Register}
+	register := []func(*http.ServeMux){authHandler.Register, profileHandler.Register, goalsHandler.Register, analysisHandler.Register, mealHandler.Register, daysHandler.Register, accountHandler.Register}
 	if privateImages != nil {
 		register = append(register, privateImages)
 	}

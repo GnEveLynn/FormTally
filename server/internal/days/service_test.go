@@ -13,11 +13,20 @@ type fakeDays struct{ meals []meals.Meal }
 
 func (f fakeDays) Meals(context.Context, string, string) ([]meals.Meal, error)   { return f.meals, nil }
 func (f fakeDays) History(context.Context, string, string) ([]HistoryDay, error) { return nil, nil }
+func (f fakeDays) Timezone(context.Context, string) (string, error)              { return "Asia/Shanghai", nil }
 
 type fakeTargets struct{ target goals.EffectiveTarget }
 
 func (f fakeTargets) Target(context.Context, string, string) (*goals.EffectiveTarget, error) {
 	return &f.target, nil
+}
+
+func TestHistoryIncludesUserTimezone(t *testing.T) {
+	service := NewService(fakeDays{}, fakeTargets{})
+	view, err := service.History(context.Background(), "user", "2026-09")
+	if err != nil || view.Month != "2026-09" || view.Timezone != "Asia/Shanghai" {
+		t.Fatalf("view=%+v err=%v", view, err)
+	}
 }
 func (f fakeTargets) CopyLatestTarget(context.Context, string, string, time.Time) (goals.EffectiveTarget, error) {
 	return f.target, nil
@@ -44,5 +53,25 @@ func TestDaySummaryReturnsRealEmptyState(t *testing.T) {
 	view, err := service.Get(context.Background(), "user", "2026-09-11")
 	if err != nil || view.Totals.EnergyKcal != 0 || len(view.MealGroups) != 0 {
 		t.Fatalf("view=%+v err=%v", view, err)
+	}
+}
+
+type missingTargets struct{ copies int }
+
+func (m *missingTargets) Target(context.Context, string, string) (*goals.EffectiveTarget, error) {
+	return nil, nil
+}
+func (m *missingTargets) CopyLatestTarget(context.Context, string, string, time.Time) (goals.EffectiveTarget, error) {
+	m.copies++
+	return goals.EffectiveTarget{}, nil
+}
+
+func TestPastEmptyDayDoesNotCreateTargetSnapshot(t *testing.T) {
+	targets := &missingTargets{}
+	service := NewService(fakeDays{}, targets)
+	service.now = func() time.Time { return time.Date(2026, 9, 11, 1, 0, 0, 0, time.UTC) }
+	view, err := service.Get(context.Background(), "user", "2026-09-09")
+	if err != nil || targets.copies != 0 || view.Target != nil || view.Progress != nil {
+		t.Fatalf("view=%+v copies=%d err=%v", view, targets.copies, err)
 	}
 }

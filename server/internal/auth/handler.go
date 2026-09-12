@@ -11,9 +11,18 @@ import (
 	"github.com/GnEveLynn/FormTally/server/internal/httpapi"
 )
 
-type Handler struct{ service *Service }
+type Handler struct {
+	service      *Service
+	authenticate func(*http.Request) (string, error)
+}
 
-func NewHandler(service *Service) *Handler { return &Handler{service: service} }
+func NewHandler(service *Service, authenticators ...func(*http.Request) (string, error)) *Handler {
+	handler := &Handler{service: service}
+	if len(authenticators) > 0 {
+		handler.authenticate = authenticators[0]
+	}
+	return handler
+}
 
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/auth/codes", h.requestCode)
@@ -27,7 +36,20 @@ func (h *Handler) requestCode(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &input) {
 		return
 	}
-	verification, err := h.service.RequestCode(r.Context(), input)
+	userID := ""
+	if input.Purpose == PurposeDeleteAccount {
+		if h.authenticate == nil {
+			writeServiceError(w, r, unauthenticated())
+			return
+		}
+		var err error
+		userID, err = h.authenticate(r)
+		if err != nil {
+			writeServiceError(w, r, unauthenticated())
+			return
+		}
+	}
+	verification, err := h.service.RequestCodeForUser(r.Context(), userID, input)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return

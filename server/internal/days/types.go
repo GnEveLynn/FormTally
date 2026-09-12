@@ -30,15 +30,20 @@ type MealGroup struct {
 	Meals    []MealSummary `json:"meals"`
 }
 type View struct {
-	LocalDate  string                `json:"localDate"`
-	Target     goals.NutritionTarget `json:"target"`
-	Totals     meals.Nutrition       `json:"totals"`
-	Progress   Progress              `json:"progress"`
-	MealGroups []MealGroup           `json:"mealGroups"`
+	LocalDate  string                 `json:"localDate"`
+	Target     *goals.NutritionTarget `json:"target"`
+	Totals     meals.Nutrition        `json:"totals"`
+	Progress   *Progress              `json:"progress"`
+	MealGroups []MealGroup            `json:"mealGroups"`
 }
 type HistoryDay struct {
 	LocalDate  string `json:"localDate"`
 	MealCount  int    `json:"mealCount"`
 	EnergyKcal int    `json:"energyKcal"`
 	Status     string `json:"status"`
+}
+type HistoryView struct {
+	Month    string       `json:"month"`
+	Timezone string       `json:"timezone"`
+	Days     []HistoryDay `json:"days"`
 }
