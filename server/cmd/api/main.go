@@ -78,7 +78,7 @@ func main() {
 		privateImages = func(mux *http.ServeMux) { mux.Handle("GET /v1/private-images/{key}", filesystem) }
 	}
 	idempotencyStore := idempotency.NewPostgresStore(pool)
-	analyzer := analysis.NewOpenAIAnalyzer(analysis.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIModel, Timeout: cfg.OpenAITimeout})
+	analyzer := analysis.NewOpenAIAnalyzer(analysis.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIModel, BaseURL: cfg.OpenAIBaseURL, Timeout: cfg.OpenAITimeout})
 	analysisHandler := analysis.NewHandler(analysis.NewService(analysis.NewPostgresStore(pool), objectStore, analyzer, idempotencyStore), authenticate)
 	mealService := meals.NewService(meals.NewPostgresStore(pool), idempotencyStore, objectStore)
 	mealHandler := meals.NewHandler(mealService, authenticate)

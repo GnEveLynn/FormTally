@@ -1,6 +1,7 @@
 package app
 
 import (
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -96,5 +97,51 @@ func TestLoadConfigRequiresPrivateS3InProductionAndParsesAISettings(t *testing.T
 	}
 	if cfg.S3Bucket != "formtally-private" || cfg.OpenAIModel != "image-capable-model" || cfg.OpenAITimeout != 7*time.Second {
 		t.Fatalf("config = %+v", cfg)
+	}
+}
+
+func TestLoadConfigDefaultsAndOverridesOpenAIBaseURL(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://formtally:formtally@127.0.0.1:5432/formtally?sslmode=disable")
+	original, existed := os.LookupEnv("OPENAI_BASE_URL")
+	if err := os.Unsetenv("OPENAI_BASE_URL"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if existed {
+			_ = os.Setenv("OPENAI_BASE_URL", original)
+		} else {
+			_ = os.Unsetenv("OPENAI_BASE_URL")
+		}
+	})
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.OpenAIBaseURL != "https://api.openai.com/v1" {
+		t.Fatalf("default OpenAIBaseURL = %q", cfg.OpenAIBaseURL)
+	}
+
+	if err := os.Setenv("OPENAI_BASE_URL", "https://gateway.example.com/openai/v1"); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err = LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.OpenAIBaseURL != "https://gateway.example.com/openai/v1" {
+		t.Fatalf("custom OpenAIBaseURL = %q", cfg.OpenAIBaseURL)
+	}
+}
+
+func TestLoadConfigRejectsInvalidOpenAIBaseURL(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://formtally:formtally@127.0.0.1:5432/formtally?sslmode=disable")
+	for _, value := range []string{"", "api.openai.com/v1", "ftp://api.example.com/v1", "https://api.example.com/v1?token=secret"} {
+		t.Run(value, func(t *testing.T) {
+			t.Setenv("OPENAI_BASE_URL", value)
+			if _, err := LoadConfig(); err == nil {
+				t.Fatalf("invalid OPENAI_BASE_URL %q accepted", value)
+			}
+		})
 	}
 }

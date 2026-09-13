@@ -26,6 +26,7 @@ type Config struct {
 	S3SecretKey    string
 	OpenAIAPIKey   string
 	OpenAIModel    string
+	OpenAIBaseURL  string
 	OpenAITimeout  time.Duration
 }
 
@@ -77,6 +78,11 @@ func LoadConfig() (Config, error) {
 	if environment == "production" && smsDriver == "test" {
 		return Config{}, errors.New("test SMS driver is forbidden in production")
 	}
+	openAIBaseURL := envOrDefault("OPENAI_BASE_URL", "https://api.openai.com/v1")
+	parsedOpenAIBaseURL, err := url.Parse(openAIBaseURL)
+	if err != nil || (parsedOpenAIBaseURL.Scheme != "http" && parsedOpenAIBaseURL.Scheme != "https") || parsedOpenAIBaseURL.Host == "" || parsedOpenAIBaseURL.User != nil || parsedOpenAIBaseURL.RawQuery != "" || parsedOpenAIBaseURL.Fragment != "" {
+		return Config{}, errors.New("OPENAI_BASE_URL must be an HTTP base URL without credentials, query, or fragment")
+	}
 	openAITimeout, err := time.ParseDuration(envOrDefault("OPENAI_TIMEOUT", "20s"))
 	if err != nil || openAITimeout <= 0 {
 		return Config{}, errors.New("OPENAI_TIMEOUT must be a positive duration")
@@ -85,7 +91,7 @@ func LoadConfig() (Config, error) {
 		HTTPAddr: address, DatabaseURL: databaseURL, AllowedOrigins: origins, Environment: environment, SMSDriver: smsDriver,
 		StorageDriver: storageDriver, StoragePath: storagePath, ImageURLSecret: imageURLSecret,
 		S3Endpoint: s3Values[0], S3Region: s3Values[1], S3Bucket: s3Values[2], S3AccessKey: s3Values[3], S3SecretKey: s3Values[4],
-		OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"), OpenAIModel: os.Getenv("OPENAI_MODEL"), OpenAITimeout: openAITimeout,
+		OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"), OpenAIModel: os.Getenv("OPENAI_MODEL"), OpenAIBaseURL: openAIBaseURL, OpenAITimeout: openAITimeout,
 	}, nil
 }
 
