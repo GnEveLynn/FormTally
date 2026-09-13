@@ -17,7 +17,7 @@
 - `SMS_DRIVER=<已实现并审查的生产驱动>`
 - `STORAGE_DRIVER=s3`
 - `S3_ENDPOINT`、`S3_REGION`、`S3_BUCKET`
-- `OPENAI_MODEL`、`OPENAI_TIMEOUT`（正时长）
+- `OPENAI_MODEL`、`OPENAI_BASE_URL`（默认 `https://api.openai.com/v1`，不含 `/responses`）、`OPENAI_TIMEOUT`（正时长）
 
 当前代码只包含显式测试短信发送器；生产短信适配器、签名、模板和测试手机号未提供前，`APP_ENV=production` 会拒绝测试发送器启动，这是发布阻塞而不是可绕过配置。
 

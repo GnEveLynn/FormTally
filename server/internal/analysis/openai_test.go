@@ -59,7 +59,7 @@ func TestOpenAILive(t *testing.T) {
 	if err := jpeg.Encode(&imageBytes, meal, nil); err != nil {
 		t.Fatal(err)
 	}
-	result, _, err := NewOpenAIAnalyzer(OpenAIConfig{APIKey: key, Model: model, Timeout: 30 * time.Second}).Analyze(context.Background(), imageBytes.Bytes())
+	result, _, err := NewOpenAIAnalyzer(OpenAIConfig{APIKey: key, Model: model, BaseURL: os.Getenv("OPENAI_BASE_URL"), Timeout: 30 * time.Second}).Analyze(context.Background(), imageBytes.Bytes())
 	if err != nil {
 		t.Fatal(err)
 	}
