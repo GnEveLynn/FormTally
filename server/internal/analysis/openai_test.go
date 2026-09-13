@@ -3,9 +3,6 @@ package analysis
 import (
 	"bytes"
 	"context"
-	"image"
-	"image/color"
-	"image/jpeg"
 	"io"
 	"net/http"
 	"os"
@@ -41,6 +38,32 @@ func TestOpenAIAnalyzerSendsImageSchemaPromptVersionAndDoesNotStoreResponse(t *t
 	}
 }
 
+func TestOpenAIAnalyzerUsesChatCompletionsForQwenStructuredOutput(t *testing.T) {
+	var requestPath, requestBody string
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		body, _ := io.ReadAll(r.Body)
+		requestPath, requestBody = r.URL.Path, string(body)
+		response := `{"id":"chatcmpl_1","object":"chat.completion","created":1,"model":"test-model","choices":[{"index":0,"message":{"role":"assistant","content":"{\"items\":[{\"name\":\"米饭\",\"grams\":100,\"energyKcal\":116,\"proteinGrams\":2.6,\"carbGrams\":25.9,\"fatGrams\":0.3,\"confidence\":\"high\",\"assumption\":null}],\"incomplete\":false,\"warning\":null}"},"finish_reason":"stop"}]}`
+		return &http.Response{StatusCode: 200, Status: "200 OK", Header: http.Header{"Content-Type": {"application/json"}}, Body: io.NopCloser(strings.NewReader(response)), Request: r}, nil
+	})}
+	analyzer := NewOpenAIAnalyzer(OpenAIConfig{APIKey: "test-key", Model: "test-model", APIStyle: "chat_completions", Timeout: time.Second, BaseURL: "https://api.test/v1", HTTPClient: client})
+	result, meta, err := analyzer.Analyze(context.Background(), []byte{1, 2, 3})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if requestPath != "/v1/chat/completions" {
+		t.Fatalf("request path = %q", requestPath)
+	}
+	if len(result.Items) != 1 || meta.ResponseStatus != "stop" {
+		t.Fatalf("result=%+v meta=%+v", result, meta)
+	}
+	for _, required := range []string{"data:image/jpeg;base64,AQID", `"type":"json_schema"`, PromptVersion, "小数点必须使用英文句点", `"store":false`, `"enable_thinking":false`} {
+		if !bytes.Contains([]byte(requestBody), []byte(required)) {
+			t.Fatalf("request missing %q: %s", required, requestBody)
+		}
+	}
+}
+
 func TestOpenAILive(t *testing.T) {
 	if os.Getenv("FORMTALLY_OPENAI_INTEGRATION") != "1" {
 		t.Skip("set FORMTALLY_OPENAI_INTEGRATION=1 to run the live OpenAI check")
@@ -49,17 +72,15 @@ func TestOpenAILive(t *testing.T) {
 	if key == "" || model == "" {
 		t.Fatal("OPENAI_API_KEY and OPENAI_MODEL are required for the live check")
 	}
-	var imageBytes bytes.Buffer
-	meal := image.NewRGBA(image.Rect(0, 0, 32, 32))
-	for y := range 32 {
-		for x := range 32 {
-			meal.Set(x, y, color.RGBA{R: 235, G: 190, B: 90, A: 255})
-		}
+	imagePath := os.Getenv("FORMTALLY_OPENAI_TEST_IMAGE")
+	if imagePath == "" {
+		t.Fatal("FORMTALLY_OPENAI_TEST_IMAGE must point to a real meal image")
 	}
-	if err := jpeg.Encode(&imageBytes, meal, nil); err != nil {
+	imageBytes, err := os.ReadFile(imagePath)
+	if err != nil {
 		t.Fatal(err)
 	}
-	result, _, err := NewOpenAIAnalyzer(OpenAIConfig{APIKey: key, Model: model, BaseURL: os.Getenv("OPENAI_BASE_URL"), Timeout: 30 * time.Second}).Analyze(context.Background(), imageBytes.Bytes())
+	result, _, err := NewOpenAIAnalyzer(OpenAIConfig{APIKey: key, Model: model, APIStyle: os.Getenv("OPENAI_API_STYLE"), BaseURL: os.Getenv("OPENAI_BASE_URL"), Timeout: 30 * time.Second}).Analyze(context.Background(), imageBytes)
 	if err != nil {
 		t.Fatal(err)
 	}
