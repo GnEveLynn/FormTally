@@ -8,6 +8,7 @@ coverage/
 playwright-report/
 test-results/
 server/bin/
+server/var/
 build/
 testdata/ai-quality/images/
 testdata/ai-quality/*.private.json

@@ -134,6 +134,47 @@ func TestLoadConfigDefaultsAndOverridesOpenAIBaseURL(t *testing.T) {
 	}
 }
 
+func TestLoadConfigDefaultsAndValidatesOpenAIAPIStyle(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://formtally:formtally@127.0.0.1:5432/formtally?sslmode=disable")
+	original, existed := os.LookupEnv("OPENAI_API_STYLE")
+	if err := os.Unsetenv("OPENAI_API_STYLE"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if existed {
+			_ = os.Setenv("OPENAI_API_STYLE", original)
+		} else {
+			_ = os.Unsetenv("OPENAI_API_STYLE")
+		}
+	})
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.OpenAIAPIStyle != "responses" {
+		t.Fatalf("default OpenAIAPIStyle = %q", cfg.OpenAIAPIStyle)
+	}
+
+	if err := os.Setenv("OPENAI_API_STYLE", "chat_completions"); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err = LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.OpenAIAPIStyle != "chat_completions" {
+		t.Fatalf("custom OpenAIAPIStyle = %q", cfg.OpenAIAPIStyle)
+	}
+
+	if err := os.Setenv("OPENAI_API_STYLE", "legacy"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadConfig(); err == nil {
+		t.Fatal("invalid OPENAI_API_STYLE accepted")
+	}
+}
+
 func TestLoadConfigRejectsInvalidOpenAIBaseURL(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://formtally:formtally@127.0.0.1:5432/formtally?sslmode=disable")
 	for _, value := range []string{"", "api.openai.com/v1", "ftp://api.example.com/v1", "https://api.example.com/v1?token=secret"} {
