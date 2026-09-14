@@ -3,6 +3,7 @@ package analysis
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"testing"
@@ -115,6 +116,34 @@ func TestCreateAnalysisPersistsRecoverableFailedResource(t *testing.T) {
 	}
 	if view.Status != "failed" || view.Failure == nil || view.Failure.Code != "AI_TIMEOUT" || view.ExpiresAt.Sub(view.CreatedAt) != 24*time.Hour {
 		t.Fatalf("view = %+v", view)
+	}
+}
+
+func TestCreateAnalysisReturnsMealItemsInPublicAPIShape(t *testing.T) {
+	analyzer := &fakeAnalyzer{result: Result{Items: []Item{{
+		Name: "米饭", Grams: 100, EnergyKcal: 116, ProteinGrams: 2.6, CarbGrams: 25.9, FatGrams: .3, Confidence: "high",
+	}}}}
+	service := NewService(&memoryDrafts{}, &memoryImages{}, analyzer, nil)
+	service.now = func() time.Time { return time.Date(2026, 9, 11, 8, 0, 0, 0, time.UTC) }
+	view, err := service.Create(context.Background(), "user_1", "key", CreateInput{ProcessingMode: "ai", AIConsentVersion: CurrentAIConsentVersion, OccurredAt: "2026-09-11T12:00:00+08:00", MealType: "lunch", Image: []byte{1}, Width: 1, Height: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, err := json.Marshal(view.Items[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	var item map[string]any
+	if err := json.Unmarshal(body, &item); err != nil {
+		t.Fatal(err)
+	}
+	nutrition, ok := item["nutrition"].(map[string]any)
+	_, hasDraftItemID := item["draftItemId"]
+	if !ok || nutrition["energyKcal"] != float64(116) || item["origin"] != "ai" || !hasDraftItemID {
+		t.Fatalf("public item = %s", body)
+	}
+	if _, leaked := item["energyKcal"]; leaked {
+		t.Fatalf("internal nutrition field leaked into public item: %s", body)
 	}
 }
 

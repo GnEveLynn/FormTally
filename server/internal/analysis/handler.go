@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -15,10 +16,15 @@ import (
 type Handler struct {
 	service      *Service
 	authenticate func(*http.Request) (string, error)
+	logger       *slog.Logger
 }
 
-func NewHandler(service *Service, authenticate func(*http.Request) (string, error)) *Handler {
-	return &Handler{service: service, authenticate: authenticate}
+func NewHandler(service *Service, authenticate func(*http.Request) (string, error), loggers ...*slog.Logger) *Handler {
+	var logger *slog.Logger
+	if len(loggers) > 0 {
+		logger = loggers[0]
+	}
+	return &Handler{service: service, authenticate: authenticate, logger: logger}
 }
 func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/meal-analyses", h.create)
@@ -51,6 +57,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 	if h.writeServiceError(w, r, err) {
 		return
 	}
+	logAnalysisResult(h.logger, httpapi.RequestID(r.Context()), view)
 	httpapi.WriteJSON(w, http.StatusCreated, map[string]any{"analysis": view})
 }
 func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +74,28 @@ func (h *Handler) get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpapi.WriteJSON(w, http.StatusOK, map[string]any{"analysis": view})
+}
+
+func logAnalysisResult(logger *slog.Logger, requestID string, view View) {
+	if logger == nil {
+		return
+	}
+	failureCode := ""
+	if view.Failure != nil {
+		failureCode = view.Failure.Code
+	}
+	logger.Info("meal analysis completed",
+		"request_id", requestID,
+		"analysis_id", view.ID,
+		"status", view.Status,
+		"processing_mode", view.ProcessingMode,
+		"item_count", len(view.Items),
+		"failure_code", failureCode,
+		"model", view.Metadata.Model,
+		"prompt_version", view.Metadata.PromptVersion,
+		"ai_response_status", view.Metadata.ResponseStatus,
+		"ai_duration_ms", view.Metadata.Duration.Milliseconds(),
+	)
 }
 func (h *Handler) retry(w http.ResponseWriter, r *http.Request) {
 	userID, ok := h.user(w, r)
@@ -87,6 +116,7 @@ func (h *Handler) retry(w http.ResponseWriter, r *http.Request) {
 	if h.writeServiceError(w, r, err) {
 		return
 	}
+	logAnalysisResult(h.logger, httpapi.RequestID(r.Context()), view)
 	httpapi.WriteJSON(w, http.StatusOK, map[string]any{"analysis": view})
 }
 func (h *Handler) discard(w http.ResponseWriter, r *http.Request) {

@@ -40,6 +40,16 @@ type ImageView struct {
 	Height    int       `json:"height"`
 	MimeType  string    `json:"mimeType"`
 }
+type ItemView struct {
+	DraftItemID      *string    `json:"draftItemId"`
+	Name             string     `json:"name"`
+	Grams            float64    `json:"grams"`
+	Nutrition        Nutrition  `json:"nutrition"`
+	BasisPer100Grams *Nutrition `json:"basisPer100Grams"`
+	Origin           string     `json:"origin"`
+	Confidence       *string    `json:"confidence"`
+	Assumption       *string    `json:"assumption"`
+}
 type View struct {
 	ID             string       `json:"id"`
 	Status         string       `json:"status"`
@@ -48,13 +58,14 @@ type View struct {
 	LocalDate      string       `json:"localDate"`
 	MealType       string       `json:"mealType"`
 	Image          ImageView    `json:"image"`
-	Items          []Item       `json:"items"`
+	Items          []ItemView   `json:"items"`
 	Warnings       []string     `json:"warnings"`
 	Failure        *FailureView `json:"failure"`
 	MealID         *string      `json:"mealId"`
 	ExpiresAt      time.Time    `json:"expiresAt"`
 	Revision       int          `json:"revision"`
 	CreatedAt      time.Time    `json:"createdAt"`
+	Metadata       Metadata     `json:"-"`
 }
 type Draft struct {
 	ID, UserID, ImageKey, ProcessingMode, LocalDate, MealType, Status string
@@ -274,7 +285,12 @@ func (s *Service) view(ctx context.Context, draft Draft) (View, error) {
 	if draft.Result.Warning != nil {
 		warnings = append(warnings, *draft.Result.Warning)
 	}
-	return View{ID: draft.ID, Status: draft.Status, ProcessingMode: draft.ProcessingMode, OccurredAt: draft.OccurredAt, LocalDate: draft.LocalDate, MealType: draft.MealType, Image: ImageView{URL: url, ExpiresAt: s.now().Add(10 * time.Minute), Width: draft.ImageWidth, Height: draft.ImageHeight, MimeType: "image/jpeg"}, Items: draft.Result.Items, Warnings: warnings, Failure: draft.Failure, MealID: draft.MealID, ExpiresAt: draft.ExpiresAt, Revision: draft.Revision, CreatedAt: draft.CreatedAt}, nil
+	items := make([]ItemView, len(draft.Result.Items))
+	for index, item := range draft.Result.Items {
+		confidence, basis := item.Confidence, item.BasisPer100Grams
+		items[index] = ItemView{DraftItemID: nil, Name: item.Name, Grams: item.Grams, Nutrition: Nutrition{EnergyKcal: item.EnergyKcal, ProteinGrams: item.ProteinGrams, CarbGrams: item.CarbGrams, FatGrams: item.FatGrams}, BasisPer100Grams: &basis, Origin: "ai", Confidence: &confidence, Assumption: item.Assumption}
+	}
+	return View{ID: draft.ID, Status: draft.Status, ProcessingMode: draft.ProcessingMode, OccurredAt: draft.OccurredAt, LocalDate: draft.LocalDate, MealType: draft.MealType, Image: ImageView{URL: url, ExpiresAt: s.now().Add(10 * time.Minute), Width: draft.ImageWidth, Height: draft.ImageHeight, MimeType: "image/jpeg"}, Items: items, Warnings: warnings, Failure: draft.Failure, MealID: draft.MealID, ExpiresAt: draft.ExpiresAt, Revision: draft.Revision, CreatedAt: draft.CreatedAt, Metadata: draft.Metadata}, nil
 }
 
 func analysisFailure(err error) *FailureView {

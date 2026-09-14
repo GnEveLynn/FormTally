@@ -79,7 +79,7 @@ func main() {
 	}
 	idempotencyStore := idempotency.NewPostgresStore(pool)
 	analyzer := analysis.NewOpenAIAnalyzer(analysis.OpenAIConfig{APIKey: cfg.OpenAIAPIKey, Model: cfg.OpenAIModel, BaseURL: cfg.OpenAIBaseURL, APIStyle: cfg.OpenAIAPIStyle, Timeout: cfg.OpenAITimeout})
-	analysisHandler := analysis.NewHandler(analysis.NewService(analysis.NewPostgresStore(pool), objectStore, analyzer, idempotencyStore), authenticate)
+	analysisHandler := analysis.NewHandler(analysis.NewService(analysis.NewPostgresStore(pool), objectStore, analyzer, idempotencyStore), authenticate, logger)
 	mealService := meals.NewService(meals.NewPostgresStore(pool), idempotencyStore, objectStore)
 	mealHandler := meals.NewHandler(mealService, authenticate)
 	daysHandler := days.NewHandler(days.NewService(days.NewPostgresStore(pool), goals.NewPostgresStore(pool)), authenticate)
