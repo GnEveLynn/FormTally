@@ -1,0 +1,19 @@
+<view class="page">
+  <view class="eyebrow">安全登录</view>
+  <view class="title">欢迎使用 FormTally</view>
+  <view class="intro">使用微信身份登录。首次使用时需要验证微信绑定手机号。</view>
+
+  <view wx:if="{{busy}}" class="status">正在连接…</view>
+  <block wx:if="{{needsPhone}}">
+    <checkbox-group bindchange="onAgreementChange">
+      <label class="agreement">
+        <checkbox value="accepted" checked="{{acceptedAgreements}}" />
+        <text>我已阅读并同意服务协议与隐私政策（版本 {{agreementVersion}}）</text>
+      </label>
+    </checkbox-group>
+    <button class="primary" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber" loading="{{busy}}" disabled="{{busy}}">验证手机号并继续</button>
+    <view class="hint">拒绝授权不会创建账户，你可以留在此页后再次尝试。</view>
+  </block>
+  <button wx:elif="{{!busy}}" class="primary" bindtap="restoreOrLogin">重试登录</button>
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
+</view>

@@ -116,8 +116,136 @@ func (s *PostgresStore) RevokeSession(ctx context.Context, hash []byte, now time
 	return nil
 }
 
+func (s *PostgresStore) CreateWeChatBindingTicket(ctx context.Context, hash []byte, openID, unionID string, now, expires time.Time) error {
+	var nullableUnionID any
+	if unionID != "" {
+		nullableUnionID = unionID
+	}
+	_, err := s.pool.Exec(ctx, `insert into wechat_binding_tickets(token_hash,openid,union_id,expires_at,created_at) values($1,$2,$3,$4,$5)`, hash, openID, nullableUnionID, expires, now)
+	return err
+}
+
+func (s *PostgresStore) CreateSessionForWeChatIdentity(ctx context.Context, openID string, sessionHash []byte, now, expires time.Time) (SessionResult, bool, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return SessionResult{}, false, err
+	}
+	defer tx.Rollback(ctx)
+
+	var userID, phone, terms, privacy string
+	var hasProfile, hasGoal bool
+	err = tx.QueryRow(ctx, `select u.id,u.phone,
+		coalesce((select version from user_consents where user_id=u.id and kind='terms'),''),
+		coalesce((select version from user_consents where user_id=u.id and kind='privacy'),''),
+		exists(select 1 from profiles where user_id=u.id),
+		exists(select 1 from goal_settings where user_id=u.id)
+		from user_identities i join users u on u.id=i.user_id
+		where i.provider='wechat_miniprogram' and i.provider_subject=$1 and u.deleted_at is null
+		for update of i,u`, openID).Scan(&userID, &phone, &terms, &privacy, &hasProfile, &hasGoal)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return SessionResult{}, false, nil
+	}
+	if err != nil {
+		return SessionResult{}, false, err
+	}
+	if _, err := tx.Exec(ctx, `insert into sessions(id,user_id,token_hash,expires_at,client_type) values($1,$2,$3,$4,$5)`, "session_"+randText(), userID, sessionHash, expires, ClientWeChatMiniProgram); err != nil {
+		return SessionResult{}, false, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return SessionResult{}, false, err
+	}
+	return sessionResult(userID, phone, expires, terms, privacy, onboardingStatus(hasProfile, hasGoal)), true, nil
+}
+
+func (s *PostgresStore) BindWeChatPhoneAndCreateSession(ctx context.Context, ticketHash []byte, phone, termsVersion, privacyVersion string, sessionHash []byte, now, expires time.Time) (SessionResult, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return SessionResult{}, err
+	}
+	defer tx.Rollback(ctx)
+
+	var openID string
+	var unionID *string
+	var ticketExpires time.Time
+	var consumedAt *time.Time
+	err = tx.QueryRow(ctx, `select openid,union_id,expires_at,consumed_at from wechat_binding_tickets where token_hash=$1 for update`, ticketHash).Scan(&openID, &unionID, &ticketExpires, &consumedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return SessionResult{}, &Error{Code: "WECHAT_BINDING_TICKET_INVALID", Message: "微信绑定凭证无效", Status: http.StatusUnprocessableEntity}
+	}
+	if err != nil {
+		return SessionResult{}, err
+	}
+	if consumedAt != nil {
+		return SessionResult{}, &Error{Code: "WECHAT_BINDING_TICKET_CONSUMED", Message: "微信绑定凭证已使用", Status: http.StatusConflict}
+	}
+	if !ticketExpires.After(now) {
+		return SessionResult{}, &Error{Code: "WECHAT_BINDING_TICKET_EXPIRED", Message: "微信绑定凭证已过期", Status: http.StatusGone}
+	}
+
+	var identityUserID, identityPhone string
+	identityErr := tx.QueryRow(ctx, `select i.user_id,u.phone from user_identities i join users u on u.id=i.user_id where i.provider='wechat_miniprogram' and i.provider_subject=$1 and u.deleted_at is null for update of i,u`, openID).Scan(&identityUserID, &identityPhone)
+	if identityErr != nil && !errors.Is(identityErr, pgx.ErrNoRows) {
+		return SessionResult{}, identityErr
+	}
+	identityExists := identityErr == nil
+
+	var phoneUserID string
+	phoneErr := tx.QueryRow(ctx, `select id from users where phone=$1 and deleted_at is null for update`, phone).Scan(&phoneUserID)
+	if phoneErr != nil && !errors.Is(phoneErr, pgx.ErrNoRows) {
+		return SessionResult{}, phoneErr
+	}
+	phoneExists := phoneErr == nil
+
+	var userID string
+	switch {
+	case identityExists && identityPhone != phone:
+		return SessionResult{}, identityConflict()
+	case identityExists && phoneExists && identityUserID != phoneUserID:
+		return SessionResult{}, identityConflict()
+	case identityExists:
+		userID = identityUserID
+	case phoneExists:
+		userID = phoneUserID
+	default:
+		userID = "user_" + randText()
+		if _, err := tx.Exec(ctx, `insert into users(id,phone) values($1,$2)`, userID, phone); err != nil {
+			return SessionResult{}, err
+		}
+	}
+
+	if !identityExists {
+		if _, err := tx.Exec(ctx, `insert into user_identities(id,user_id,provider,provider_subject,union_id,created_at,updated_at) values($1,$2,'wechat_miniprogram',$3,$4,$5,$5)`, "identity_"+randText(), userID, openID, unionID, now); err != nil {
+			return SessionResult{}, err
+		}
+	}
+	for _, consent := range []struct{ kind, version string }{{"terms", termsVersion}, {"privacy", privacyVersion}} {
+		if _, err := tx.Exec(ctx, `insert into user_consents(user_id,kind,version,accepted_at) values($1,$2,$3,$4) on conflict(user_id,kind) do update set version=excluded.version,accepted_at=excluded.accepted_at`, userID, consent.kind, consent.version, now); err != nil {
+			return SessionResult{}, err
+		}
+	}
+	if _, err := tx.Exec(ctx, `insert into sessions(id,user_id,token_hash,expires_at,client_type) values($1,$2,$3,$4,$5)`, "session_"+randText(), userID, sessionHash, expires, ClientWeChatMiniProgram); err != nil {
+		return SessionResult{}, err
+	}
+	if _, err := tx.Exec(ctx, `update wechat_binding_tickets set consumed_at=$2,user_id=$3 where token_hash=$1`, ticketHash, now, userID); err != nil {
+		return SessionResult{}, err
+	}
+
+	var hasProfile, hasGoal bool
+	if err := tx.QueryRow(ctx, `select exists(select 1 from profiles where user_id=$1),exists(select 1 from goal_settings where user_id=$1)`, userID).Scan(&hasProfile, &hasGoal); err != nil {
+		return SessionResult{}, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return SessionResult{}, err
+	}
+	return sessionResult(userID, phone, expires, termsVersion, privacyVersion, onboardingStatus(hasProfile, hasGoal)), nil
+}
+
 func invalidCode() error {
 	return &Error{Code: "VERIFICATION_CODE_INVALID", Message: "验证码错误", Status: http.StatusUnprocessableEntity}
+}
+
+func identityConflict() error {
+	return &Error{Code: "IDENTITY_CONFLICT", Message: "微信身份与手机号属于不同账户", Status: http.StatusConflict}
 }
 func randText() string { return rand.Text() }
 

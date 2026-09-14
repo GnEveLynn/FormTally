@@ -2,6 +2,7 @@ package auth
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -63,6 +64,47 @@ func TestAuthHTTPJourney(t *testing.T) {
 		t.Fatalf("logout = %d, cookies = %+v", logout.Code, logout.Result().Cookies())
 	}
 	after := performJSON(router, http.MethodGet, "/v1/auth/session", "", cookie.Value, false)
+	if after.Code != http.StatusUnauthorized {
+		t.Fatalf("after logout = %d %s", after.Code, after.Body.String())
+	}
+}
+
+func TestAuthSessionHandlersAcceptBearerWithoutSettingCookie(t *testing.T) {
+	service, sender := testService(t)
+	ctx := context.Background()
+	phone := "+8613812345678"
+	verification, err := service.RequestCode(ctx, RequestCodeInput{Phone: phone, Purpose: PurposeLogin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, _ := sender.LastCode(phone, string(PurposeLogin))
+	_, token, err := service.CreateSession(ctx, CreateSessionInput{Phone: phone, Code: code, VerificationRequestID: verification.RequestID, TermsVersion: CurrentTermsVersion, PrivacyVersion: CurrentPrivacyVersion})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := NewHandler(service)
+	router := WithSessionCredential(httpapi.NewRouter(slog.New(slog.NewTextHandler(io.Discard, nil)), []string{"http://127.0.0.1:5173"}, handler.Register))
+
+	currentRequest := httptest.NewRequest(http.MethodGet, "/v1/auth/session", nil)
+	currentRequest.Header.Set("Authorization", "Bearer "+token)
+	current := httptest.NewRecorder()
+	router.ServeHTTP(current, currentRequest)
+	if current.Code != http.StatusOK {
+		t.Fatalf("current session = %d %s", current.Code, current.Body.String())
+	}
+
+	logoutRequest := httptest.NewRequest(http.MethodDelete, "/v1/auth/session", nil)
+	logoutRequest.Header.Set("Authorization", "Bearer "+token)
+	logout := httptest.NewRecorder()
+	router.ServeHTTP(logout, logoutRequest)
+	if logout.Code != http.StatusNoContent || len(logout.Result().Cookies()) != 0 {
+		t.Fatalf("logout = %d, cookies = %+v", logout.Code, logout.Result().Cookies())
+	}
+
+	afterRequest := httptest.NewRequest(http.MethodGet, "/v1/auth/session", nil)
+	afterRequest.Header.Set("Authorization", "Bearer "+token)
+	after := httptest.NewRecorder()
+	router.ServeHTTP(after, afterRequest)
 	if after.Code != http.StatusUnauthorized {
 		t.Fatalf("after logout = %d %s", after.Code, after.Body.String())
 	}

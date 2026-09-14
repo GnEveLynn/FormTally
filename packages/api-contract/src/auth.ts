@@ -32,3 +32,22 @@ export interface LoginRequest {
     privacyVersion: string
   }
 }
+
+export interface WeChatSessionRequest {
+  loginCode: string
+}
+
+export type WeChatSessionResult =
+  | ({ bindingRequired: false; token: string } & SessionResponse)
+  | { bindingRequired: true; bindingTicket: string; expiresInSeconds: 300 }
+
+export interface WeChatPhoneBindingRequest {
+  bindingTicket: string
+  phoneCode: string
+  agreements: {
+    termsVersion: string
+    privacyVersion: string
+  }
+}
+
+export type WeChatPhoneBindingResponse = { token: string } & SessionResponse

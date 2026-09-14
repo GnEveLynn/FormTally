@@ -1,0 +1,9 @@
+.page { padding: 40rpx 48rpx 64rpx; }
+.step { color: var(--ft-color-text-muted); }
+.title { margin-top: 16rpx; font-size: var(--ft-font-size-title); font-weight: 700; }
+.metrics, .calculation { display: grid; gap: 20rpx; margin-top: 32rpx; padding: 32rpx; border-radius: 28rpx; background: #fff; line-height: 1.5; }
+.energy { font-size: 56rpx; font-weight: 700; }
+.energy text { font-size: 28rpx; }
+.section-title { font-weight: 700; }
+.warning, .error { margin-top: 24rpx; color: #a22b2b; }
+.primary { min-height: 104rpx; margin-top: 40rpx; border-radius: 999rpx; background: var(--ft-color-text); color: #fff; font-weight: 700; }

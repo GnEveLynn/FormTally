@@ -1,0 +1,20 @@
+<view wx:if="{{preview}}" class="page">
+  <view class="step">第 3 步，共 3 步</view>
+  <view class="title">你的每日目标</view>
+  <view class="metrics">
+    <view class="energy">{{preview.target.energyKcal}} <text>kcal</text></view>
+    <view>蛋白质 {{preview.target.proteinGrams}} g</view>
+    <view>碳水 {{preview.target.carbGrams}} g</view>
+    <view>脂肪 {{preview.target.fatGrams}} g</view>
+  </view>
+  <view wx:for="{{preview.warnings}}" wx:key="*this" class="warning">{{item}}</view>
+  <view wx:if="{{preview.calculation}}" class="calculation">
+    <view class="section-title">{{preview.calculation.method.displayName}}</view>
+    <view>{{preview.calculation.method.formulaExpression}}</view>
+    <view wx:for="{{preview.calculation.steps}}" wx:key="key">{{item.label}}：{{item.value}} {{item.unit}}</view>
+    <view>{{preview.calculation.disclaimer}}</view>
+  </view>
+  <view wx:else class="calculation">手动目标不会应用自动计算公式。</view>
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
+  <button class="primary" bindtap="confirm" loading="{{busy}}" disabled="{{busy}}">确认并进入今天</button>
+</view>

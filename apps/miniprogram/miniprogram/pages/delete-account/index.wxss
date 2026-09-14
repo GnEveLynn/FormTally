@@ -1,0 +1,1 @@
+.page{padding:32rpx;display:grid;gap:22rpx}.title{font-size:48rpx;font-weight:700}.warning{padding:24rpx;color:#7d2020;background:#fff0f0;border-radius:20rpx}.heading{font-weight:700}.field{min-height:88rpx;padding:22rpx;border:1rpx solid #cbd5d1;border-radius:16rpx;background:#fff}.danger{color:#fff;background:#a22b2b}.error{color:#a22b2b}

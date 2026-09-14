@@ -88,6 +88,73 @@ func TestOriginMiddleware(t *testing.T) {
 	}
 }
 
+func TestOriginMiddlewareUsesCredentialKindAndExactPublicRoutes(t *testing.T) {
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		WriteJSON(w, http.StatusCreated, map[string]string{"status": "created"})
+	})
+	handler := middleware(logger, []string{"http://127.0.0.1:5173"})(next)
+
+	tests := []struct {
+		name      string
+		path      string
+		configure func(*http.Request) *http.Request
+		want      int
+	}{
+		{
+			name: "cookie write still needs origin",
+			path: "/v1/resource",
+			configure: func(request *http.Request) *http.Request {
+				request.AddCookie(&http.Cookie{Name: "formtally_session", Value: "cookie-token"})
+				return request
+			},
+			want: http.StatusForbidden,
+		},
+		{
+			name: "bearer write does not need origin",
+			path: "/v1/resource",
+			configure: func(request *http.Request) *http.Request {
+				return request.WithContext(WithBearerCredential(request.Context()))
+			},
+			want: http.StatusCreated,
+		},
+		{
+			name:      "wechat session is public",
+			path:      "/v1/auth/wechat/sessions",
+			configure: func(request *http.Request) *http.Request { return request },
+			want:      http.StatusCreated,
+		},
+		{
+			name:      "wechat phone binding is public",
+			path:      "/v1/auth/wechat/phone-bindings",
+			configure: func(request *http.Request) *http.Request { return request },
+			want:      http.StatusCreated,
+		},
+		{
+			name:      "wechat route prefix is not public",
+			path:      "/v1/auth/wechat/sessions/extra",
+			configure: func(request *http.Request) *http.Request { return request },
+			want:      http.StatusForbidden,
+		},
+		{
+			name:      "other anonymous write is not public",
+			path:      "/v1/resource",
+			configure: func(request *http.Request) *http.Request { return request },
+			want:      http.StatusForbidden,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := test.configure(httptest.NewRequest(http.MethodPost, test.path, nil))
+			response := httptest.NewRecorder()
+			handler.ServeHTTP(response, request)
+			if response.Code != test.want {
+				t.Fatalf("status = %d, want %d", response.Code, test.want)
+			}
+		})
+	}
+}
+
 func TestMiddlewareRecoversAndLogsOnlySafeFields(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logs, nil))

@@ -1,0 +1,22 @@
+<view class="page">
+  <view class="title">拍下这一餐</view>
+  <view class="intro">尽量拍清整份食物。图片会压缩为 JPEG，长边不超过 1600 像素。</view>
+
+  <view class="field"><text>餐别</text><picker range="{{mealLabels}}" value="{{mealTypeIndex}}" bindchange="onMealTypeChange"><view class="control">{{mealLabels[mealTypeIndex]}}</view></picker></view>
+
+  <image wx:if="{{imagePath}}" class="preview" src="{{imagePath}}" mode="aspectFill" />
+  <view class="choices">
+    <button class="primary" bindtap="chooseCamera" loading="{{busy}}" disabled="{{busy}}">拍照</button>
+    <button class="secondary" bindtap="chooseAlbum" disabled="{{busy}}">从相册选择</button>
+  </view>
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
+  <button wx:if="{{offerAlbum}}" class="secondary" bindtap="chooseAlbum">改用相册</button>
+
+  <view wx:if="{{imagePath}}" class="notice">
+    <view class="notice-title">AI 图片处理确认</view>
+    <view>餐食图片将上传并发送给第三方 AI 服务识别；识别结果和营养数据仅为估算，请在保存前核对。</view>
+    <button class="primary" bindtap="startAI" disabled="{{busy}}">同意并开始分析</button>
+    <button class="link" bindtap="abandon" disabled="{{busy}}">放弃本次草稿</button>
+  </view>
+  <button class="secondary manual" bindtap="startManual" disabled="{{busy}}">不上传图片，手动录入</button>
+</view>

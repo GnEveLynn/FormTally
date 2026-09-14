@@ -1,0 +1,15 @@
+{
+  "appid": "touristappid",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "miniprogram/",
+  "packOptions": {
+    "ignore": [{ "type": "glob", "value": "**/*.spec.ts" }],
+    "include": []
+  },
+  "projectname": "FormTally",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "useCompilerPlugins": ["typescript"]
+  }
+}

@@ -11,24 +11,28 @@ import (
 )
 
 type Config struct {
-	HTTPAddr       string
-	DatabaseURL    string
-	AllowedOrigins []string
-	Environment    string
-	SMSDriver      string
-	StorageDriver  string
-	StoragePath    string
-	ImageURLSecret string
-	S3Endpoint     string
-	S3Region       string
-	S3Bucket       string
-	S3AccessKey    string
-	S3SecretKey    string
-	OpenAIAPIKey   string
-	OpenAIModel    string
-	OpenAIBaseURL  string
-	OpenAIAPIStyle string
-	OpenAITimeout  time.Duration
+	HTTPAddr         string
+	DatabaseURL      string
+	AllowedOrigins   []string
+	Environment      string
+	SMSDriver        string
+	StorageDriver    string
+	StoragePath      string
+	ImageURLSecret   string
+	S3Endpoint       string
+	S3Region         string
+	S3Bucket         string
+	S3AccessKey      string
+	S3SecretKey      string
+	OpenAIAPIKey     string
+	OpenAIModel      string
+	OpenAIBaseURL    string
+	OpenAIAPIStyle   string
+	OpenAITimeout    time.Duration
+	WeChatAppID      string
+	WeChatAppSecret  string
+	WeChatAPIBaseURL string
+	WeChatAPITimeout time.Duration
 }
 
 func LoadConfig() (Config, error) {
@@ -55,6 +59,23 @@ func LoadConfig() (Config, error) {
 		return Config{}, err
 	}
 	environment := envOrDefault("APP_ENV", "development")
+	weChatAppID := os.Getenv("WECHAT_APP_ID")
+	weChatAppSecret := os.Getenv("WECHAT_APP_SECRET")
+	if (weChatAppID == "") != (weChatAppSecret == "") {
+		return Config{}, errors.New("WECHAT_APP_ID and WECHAT_APP_SECRET must be configured together")
+	}
+	weChatAPIBaseURL := envOrDefault("WECHAT_API_BASE_URL", "https://api.weixin.qq.com")
+	parsedWeChatAPIBaseURL, err := url.Parse(weChatAPIBaseURL)
+	if err != nil || (parsedWeChatAPIBaseURL.Scheme != "http" && parsedWeChatAPIBaseURL.Scheme != "https") || parsedWeChatAPIBaseURL.Host == "" || parsedWeChatAPIBaseURL.User != nil || parsedWeChatAPIBaseURL.Path != "" || parsedWeChatAPIBaseURL.RawQuery != "" || parsedWeChatAPIBaseURL.Fragment != "" {
+		return Config{}, errors.New("WECHAT_API_BASE_URL must be an HTTP base URL without credentials, path, query, or fragment")
+	}
+	if environment == "production" && (parsedWeChatAPIBaseURL.Scheme != "https" || parsedWeChatAPIBaseURL.Hostname() != "api.weixin.qq.com" || parsedWeChatAPIBaseURL.Port() != "") {
+		return Config{}, errors.New("WECHAT_API_BASE_URL must be https://api.weixin.qq.com in production")
+	}
+	weChatAPITimeout, err := time.ParseDuration(envOrDefault("WECHAT_API_TIMEOUT", "5s"))
+	if err != nil || weChatAPITimeout <= 0 {
+		return Config{}, errors.New("WECHAT_API_TIMEOUT must be a positive duration")
+	}
 	smsDriver := envOrDefault("SMS_DRIVER", "test")
 	storageDriver := envOrDefault("STORAGE_DRIVER", "filesystem")
 	if storageDriver != "filesystem" && storageDriver != "s3" {
@@ -97,6 +118,7 @@ func LoadConfig() (Config, error) {
 		StorageDriver: storageDriver, StoragePath: storagePath, ImageURLSecret: imageURLSecret,
 		S3Endpoint: s3Values[0], S3Region: s3Values[1], S3Bucket: s3Values[2], S3AccessKey: s3Values[3], S3SecretKey: s3Values[4],
 		OpenAIAPIKey: os.Getenv("OPENAI_API_KEY"), OpenAIModel: os.Getenv("OPENAI_MODEL"), OpenAIBaseURL: openAIBaseURL, OpenAIAPIStyle: openAIAPIStyle, OpenAITimeout: openAITimeout,
+		WeChatAppID: weChatAppID, WeChatAppSecret: weChatAppSecret, WeChatAPIBaseURL: weChatAPIBaseURL, WeChatAPITimeout: weChatAPITimeout,
 	}, nil
 }
 

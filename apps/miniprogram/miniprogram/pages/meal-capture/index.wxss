@@ -1,0 +1,15 @@
+.page { padding: 40rpx 48rpx 64rpx; }
+.title { font-size: var(--ft-font-size-title); font-weight: 700; }
+.intro { margin-top: 16rpx; color: var(--ft-color-text-muted); line-height: 1.6; }
+.field { display: grid; gap: 12rpx; margin-top: 32rpx; font-weight: 700; }
+.control { min-height: 92rpx; padding: 0 24rpx; border: 2rpx solid #cbd5d1; border-radius: 24rpx; background: #fff; line-height: 92rpx; font-weight: 400; }
+.preview { width: 100%; height: 520rpx; margin-top: 28rpx; border-radius: 30rpx; background: #e5ebe8; }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 20rpx; margin-top: 28rpx; }
+.primary, .secondary { min-height: 96rpx; border-radius: 999rpx; font-weight: 700; }
+.primary { background: var(--ft-color-text); color: #fff; }
+.secondary { border: 2rpx solid #cbd5d1; background: #fff; color: var(--ft-color-text); }
+.notice { display: grid; gap: 20rpx; margin-top: 32rpx; padding: 28rpx; border-radius: 28rpx; background: #eef7f3; line-height: 1.6; }
+.notice-title { font-size: 34rpx; font-weight: 700; }
+.link { border: 0; background: transparent; color: #a22b2b; }
+.manual, .error { margin-top: 24rpx; }
+.error { color: #a22b2b; }

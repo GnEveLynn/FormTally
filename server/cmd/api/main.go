@@ -25,6 +25,7 @@ import (
 	"github.com/GnEveLynn/FormTally/server/internal/profile"
 	"github.com/GnEveLynn/FormTally/server/internal/sms"
 	"github.com/GnEveLynn/FormTally/server/internal/storage"
+	"github.com/GnEveLynn/FormTally/server/internal/wechat"
 )
 
 func main() {
@@ -55,9 +56,18 @@ func main() {
 	if cfg.Environment == "development" && cfg.SMSDriver == "test" {
 		smsLogger = logger
 	}
-	authService := auth.NewService(auth.NewPostgresStore(pool), sms.NewTestSender(smsLogger))
+	smsSender := sms.NewTestSender(smsLogger)
+	weChatClients := []wechat.Client{}
+	if cfg.WeChatAppID != "" {
+		weChatClients = append(weChatClients, wechat.NewClient(cfg.WeChatAppID, cfg.WeChatAppSecret, cfg.WeChatAPIBaseURL, cfg.WeChatAPITimeout))
+	}
+	authService := auth.NewService(auth.NewPostgresStore(pool), smsSender, weChatClients...)
 	authenticate := func(r *http.Request) (string, error) {
-		session, err := authService.GetSession(r.Context(), auth.SessionToken(r))
+		credential, err := auth.SessionCredential(r)
+		if err != nil {
+			return "", err
+		}
+		session, err := authService.GetSession(r.Context(), credential.Token)
 		return session.User.ID, err
 	}
 	authHandler := auth.NewHandler(authService, authenticate)
@@ -105,7 +115,7 @@ func main() {
 	if privateImages != nil {
 		register = append(register, privateImages)
 	}
-	if err := app.Serve(ctx, app.NewServer(cfg, httpapi.NewRouter(logger, cfg.AllowedOrigins, register...)), listener); err != nil {
+	if err := app.Serve(ctx, app.NewServer(cfg, auth.WithSessionCredential(httpapi.NewRouter(logger, cfg.AllowedOrigins, register...))), listener); err != nil {
 		logger.Error("api stopped with error", "error", err)
 		os.Exit(1)
 	}

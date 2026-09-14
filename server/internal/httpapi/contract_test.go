@@ -40,7 +40,7 @@ type endpointFixture struct {
 	Status int    `json:"status"`
 }
 
-func TestAllTwentyOneAPIContractsAreRegistered(t *testing.T) {
+func TestAllTwentyFourAPIContractsAreRegistered(t *testing.T) {
 	data, err := os.ReadFile("testdata/endpoints.json")
 	if err != nil {
 		t.Fatal(err)
@@ -49,8 +49,8 @@ func TestAllTwentyOneAPIContractsAreRegistered(t *testing.T) {
 	if err := json.Unmarshal(data, &endpoints); err != nil {
 		t.Fatal(err)
 	}
-	if len(endpoints) != 21 {
-		t.Fatalf("endpoint fixtures = %d, want 21", len(endpoints))
+	if len(endpoints) != 24 {
+		t.Fatalf("endpoint fixtures = %d, want 24", len(endpoints))
 	}
 
 	router := contractRouter(io.Discard)

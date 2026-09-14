@@ -9,6 +9,13 @@ const (
 	SessionCookieName               = "formtally_session"
 )
 
+type ClientType string
+
+const (
+	ClientWeb               ClientType = "web"
+	ClientWeChatMiniProgram ClientType = "wechat_miniprogram"
+)
+
 type Purpose string
 
 const (
@@ -33,6 +40,25 @@ type CreateSessionInput struct {
 	VerificationRequestID string
 	TermsVersion          string
 	PrivacyVersion        string
+}
+
+type WeChatSessionInput struct {
+	LoginCode string
+}
+
+type WeChatSessionResult struct {
+	BindingRequired  bool
+	BindingTicket    string
+	ExpiresInSeconds int
+	Session          SessionResult
+	Token            string
+}
+
+type WeChatPhoneBindingInput struct {
+	BindingTicket  string
+	PhoneCode      string
+	TermsVersion   string
+	PrivacyVersion string
 }
 
 type SessionView struct {

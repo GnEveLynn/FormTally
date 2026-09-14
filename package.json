@@ -8,7 +8,10 @@
   "scripts": {
     "dev:web": "npm --workspace @formtally/web run dev",
     "build:web": "npm --workspace @formtally/web run build",
-    "test:web": "npm --workspace @formtally/web run test:unit"
+    "test:web": "npm --workspace @formtally/web run test:unit",
+    "build:design-tokens": "node scripts/build-design-tokens.mjs",
+    "build:miniprogram": "npm run build:design-tokens && npm --workspace @formtally/miniprogram run build",
+    "test:miniprogram": "npm --workspace @formtally/miniprogram run test"
   },
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"

@@ -1,0 +1,12 @@
+<view class="page">
+  <view class="eyebrow">FORMTALLY</view>
+  <view class="title">{{status === 'failed' ? '暂时没分析出来' : '正在分析'}}</view>
+  <image class="preview" src="{{imagePath}}" mode="aspectFill" />
+  <progress wx:if="{{status !== 'failed'}}" percent="{{progress}}" active color="#55b98d" />
+  <view wx:if="{{slow}}" class="muted">仍在认真识别，请保持页面打开。</view>
+  <view wx:if="{{status === 'failed'}}" class="actions">
+    <view class="error" role="alert">{{error}}</view>
+    <button class="primary" bindtap="retry" loading="{{busy}}" disabled="{{busy}}">使用当前图片重试</button>
+    <button class="secondary" bindtap="manual" disabled="{{busy}}">手动录入</button>
+  </view>
+</view>
