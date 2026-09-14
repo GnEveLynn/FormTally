@@ -1,7 +1,7 @@
 import type { OnboardingStatus } from '@formtally/api-contract/auth'
 import type { EffectiveTarget, GoalSettingsInput, NutritionTarget, PreviewResponse, SaveGoalResponse } from '@formtally/api-contract/goals'
 import type { ProfileInput, ProfileResponse } from '@formtally/api-contract/profile'
-import { validateProfile } from '@formtally/domain/profile-validation'
+import { validateProfile } from '../domain/profile-validation'
 import * as goalsApi from '../services/goals'
 import * as profileApi from '../services/profile'
 

@@ -1,5 +1,5 @@
 import type { ProfileInput } from '@formtally/api-contract/profile'
-import { validateProfile } from '@formtally/domain/profile-validation'
+import { validateProfile } from '../../domain/profile-validation'
 import * as profileApi from '../../services/profile'
 import { accountStore } from '../../stores/account'
 

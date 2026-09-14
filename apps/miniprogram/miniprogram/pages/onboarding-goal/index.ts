@@ -1,5 +1,5 @@
 import type { NutritionTarget } from '@formtally/api-contract/goals'
-import { automaticGoalEligible } from '@formtally/domain/profile-validation'
+import { automaticGoalEligible } from '../../domain/profile-validation'
 import { onboardingStore } from '../../stores/onboarding'
 
 const objectiveValues = ['fat_loss', 'maintain', 'muscle_gain'] as const

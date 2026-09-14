@@ -1,6 +1,6 @@
 import type { MealItem } from '@formtally/api-contract/analyses'
 import type { Meal } from '@formtally/api-contract/meals'
-import { validateMeal } from '@formtally/domain/meal-editor'
+import { validateMeal } from '../../domain/meal-editor'
 import { ApiError } from '../../services/http'
 import * as meals from '../../services/meals'
 import { historyStore } from '../../stores/history'

@@ -1,5 +1,5 @@
 import type { MealItem } from '@formtally/api-contract/analyses'
-import { sumNutrition } from '@formtally/domain/meal-editor'
+import { sumNutrition } from '../../domain/meal-editor'
 
 export function reviewModel(items: MealItem[], warnings: string[]) {
   return {

@@ -1,7 +1,7 @@
 import type { DeleteAccountInput } from '@formtally/api-contract/account'
 import type { GoalSettingsInput } from '@formtally/api-contract/goals'
 import type { ProfileInput } from '@formtally/api-contract/profile'
-import { normalizeChinaPhone } from '@formtally/domain/phone'
+import { normalizeChinaPhone } from '../domain/phone'
 import * as accountApi from '../services/account'
 import * as goalsApi from '../services/goals'
 import * as profileApi from '../services/profile'

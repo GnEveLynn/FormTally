@@ -1,6 +1,6 @@
 import type { Analysis, AnalysisResponse, MealItem } from '@formtally/api-contract/analyses'
 import type { SaveMealInput, SaveMealResponse } from '@formtally/api-contract/meals'
-import { validateMeal } from '@formtally/domain/meal-editor'
+import { validateMeal } from '../domain/meal-editor'
 import type { ProcessedImage } from '../platform/media'
 import * as analysesApi from '../services/analyses'
 import * as mealsApi from '../services/meals'
