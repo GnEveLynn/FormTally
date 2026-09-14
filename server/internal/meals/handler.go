@@ -22,6 +22,7 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/meals", h.create)
 	mux.HandleFunc("GET /v1/meals/{mealId}", h.get)
 	mux.HandleFunc("PATCH /v1/meals/{mealId}", h.update)
+	mux.HandleFunc("PUT /v1/meals/{mealId}", h.update)
 	mux.HandleFunc("DELETE /v1/meals/{mealId}/image", h.removeImage)
 	mux.HandleFunc("DELETE /v1/meals/{mealId}", h.delete)
 }

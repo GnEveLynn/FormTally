@@ -1,0 +1,16 @@
+@import "styles/tokens.wxss";
+
+page {
+  box-sizing: border-box;
+  min-height: 100%;
+  background: var(--ft-color-background);
+  color: var(--ft-color-text);
+  font-size: var(--ft-font-size-body);
+}
+
+view,
+button,
+input,
+picker {
+  box-sizing: border-box;
+}

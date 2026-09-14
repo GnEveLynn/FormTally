@@ -29,6 +29,8 @@ func (h *Handler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /v1/auth/sessions", h.createSession)
 	mux.HandleFunc("GET /v1/auth/session", h.getSession)
 	mux.HandleFunc("DELETE /v1/auth/session", h.deleteSession)
+	mux.HandleFunc("POST /v1/auth/wechat/sessions", h.createWeChatSession)
+	mux.HandleFunc("POST /v1/auth/wechat/phone-bindings", h.createWeChatPhoneBinding)
 }
 
 func (h *Handler) requestCode(w http.ResponseWriter, r *http.Request) {
@@ -80,7 +82,12 @@ func (h *Handler) createSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
-	result, err := h.service.GetSession(r.Context(), SessionToken(r))
+	credential, err := SessionCredential(r)
+	if err != nil {
+		writeServiceError(w, r, unauthenticated())
+		return
+	}
+	result, err := h.service.GetSession(r.Context(), credential.Token)
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
@@ -89,11 +96,18 @@ func (h *Handler) getSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deleteSession(w http.ResponseWriter, r *http.Request) {
-	if err := h.service.RevokeSession(r.Context(), SessionToken(r)); err != nil {
+	credential, err := SessionCredential(r)
+	if err != nil {
+		writeServiceError(w, r, unauthenticated())
+		return
+	}
+	if err := h.service.RevokeSession(r.Context(), credential.Token); err != nil {
 		writeServiceError(w, r, err)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: SessionCookieName, Value: "", Path: "/", HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode, Expires: time.Unix(1, 0), MaxAge: -1})
+	if credential.Kind == CredentialCookie {
+		http.SetCookie(w, &http.Cookie{Name: SessionCookieName, Value: "", Path: "/", HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode, Expires: time.Unix(1, 0), MaxAge: -1})
+	}
 	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(http.StatusNoContent)
 }

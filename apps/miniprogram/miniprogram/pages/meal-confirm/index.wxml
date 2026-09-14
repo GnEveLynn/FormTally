@@ -1,0 +1,24 @@
+<view class="page">
+  <view class="title">{{mode === 'manual' ? '手动录入' : '确认识别结果'}}</view>
+  <view wx:if="{{mode === 'ai'}}" class="notice">{{estimateNotice}}</view>
+  <view wx:for="{{warnings}}" wx:key="*this" class="warning">{{item}}</view>
+  <view wx:for="{{lowConfidence}}" wx:key="index" class="warning">“{{item.name}}”识别置信度较低：{{item.assumption}}</view>
+
+  <view wx:for="{{items}}" wx:key="index" class="item-card">
+    <view class="item-head"><text class="item-title">食物 {{index + 1}}</text><button class="remove" data-index="{{index}}" bindtap="removeItem">删除</button></view>
+    <view class="field"><text>名称</text><input class="control" data-index="{{index}}" data-field="name" value="{{item.name}}" bindinput="onItemInput" /></view>
+    <view class="field"><text>重量（g）</text><input class="control" type="digit" data-index="{{index}}" data-field="grams" value="{{item.grams}}" bindinput="onItemInput" /></view>
+    <view class="nutrition-grid">
+      <view class="field"><text>热量</text><input class="control compact" type="number" data-index="{{index}}" data-field="energyKcal" value="{{item.nutrition.energyKcal}}" bindinput="onItemInput" /></view>
+      <view class="field"><text>蛋白质</text><input class="control compact" type="digit" data-index="{{index}}" data-field="proteinGrams" value="{{item.nutrition.proteinGrams}}" bindinput="onItemInput" /></view>
+      <view class="field"><text>碳水</text><input class="control compact" type="digit" data-index="{{index}}" data-field="carbGrams" value="{{item.nutrition.carbGrams}}" bindinput="onItemInput" /></view>
+      <view class="field"><text>脂肪</text><input class="control compact" type="digit" data-index="{{index}}" data-field="fatGrams" value="{{item.nutrition.fatGrams}}" bindinput="onItemInput" /></view>
+    </view>
+  </view>
+
+  <button class="secondary" bindtap="addItem">＋ 添加食物</button>
+  <view class="totals"><text class="total-energy">约 {{totals.energyKcal}} 千卡</text><text>蛋白质 {{totals.proteinGrams}}g · 碳水 {{totals.carbGrams}}g · 脂肪 {{totals.fatGrams}}g</text></view>
+  <view wx:if="{{validationError}}" class="error" role="alert">{{validationError}}</view>
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
+  <button class="primary" bindtap="save" loading="{{busy}}" disabled="{{busy}}">{{busy ? '保存中…' : '保存本餐'}}</button>
+</view>

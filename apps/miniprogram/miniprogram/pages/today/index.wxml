@@ -1,0 +1,37 @@
+<view class="page">
+  <view class="eyebrow">FORMTALLY</view>
+  <view class="title">今天</view>
+  <view class="date">{{localDate}}</view>
+
+  <view wx:if="{{status === 'loading'}}" class="state">正在加载今天的记录…</view>
+  <view wx:elif="{{status === 'error'}}" class="state">
+    <view class="state-title">暂时无法加载</view>
+    <view class="error" role="alert">{{error}}</view>
+    <button class="secondary" bindtap="retry">重试</button>
+  </view>
+
+  <block wx:elif="{{day}}">
+    <view wx:if="{{day.progress}}" class="progress-grid">
+      <view class="metric"><text>热量</text><text class="metric-value">{{day.progress.energy.consumed}} / {{day.progress.energy.target}}</text><text class="muted">千卡 · {{day.progress.energy.percent}}%</text></view>
+      <view class="metric"><text>蛋白质</text><text class="metric-value">{{day.progress.protein.consumed}} / {{day.progress.protein.target}}</text><text class="muted">克 · {{day.progress.protein.percent}}%</text></view>
+      <view class="metric"><text>碳水</text><text class="metric-value">{{day.progress.carb.consumed}} / {{day.progress.carb.target}}</text><text class="muted">克 · {{day.progress.carb.percent}}%</text></view>
+      <view class="metric"><text>脂肪</text><text class="metric-value">{{day.progress.fat.consumed}} / {{day.progress.fat.target}}</text><text class="muted">克 · {{day.progress.fat.percent}}%</text></view>
+    </view>
+
+    <view wx:if="{{status === 'empty'}}" class="state empty">
+      <view class="state-title">今天还没有记录</view>
+      <view class="muted">拍张照片，或直接手动录入这一餐。</view>
+      <button class="primary" bindtap="recordMeal">记录一餐</button>
+    </view>
+
+    <view wx:else class="groups">
+      <view wx:for="{{groups}}" wx:key="mealType" class="group">
+        <view class="group-title">{{item.label}}</view>
+        <view wx:for="{{item.meals}}" wx:for-item="meal" wx:key="id" class="meal">
+          <view class="meal-head"><text>{{meal.time}}</text><text class="meal-energy">{{meal.totals.energyKcal}} 千卡</text></view>
+          <view class="muted">蛋白质 {{meal.totals.proteinGrams}}g · 碳水 {{meal.totals.carbGrams}}g · 脂肪 {{meal.totals.fatGrams}}g</view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

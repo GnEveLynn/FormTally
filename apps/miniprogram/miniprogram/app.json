@@ -1,0 +1,38 @@
+{
+  "pages": [
+    "pages/login/index",
+    "pages/onboarding-profile/index",
+    "pages/onboarding-goal/index",
+    "pages/onboarding-result/index",
+    "pages/today/index",
+    "pages/meal-capture/index",
+    "pages/meal-analyzing/index",
+    "pages/meal-confirm/index",
+    "pages/meal-manual/index",
+    "pages/history/index",
+    "pages/meal-detail/index",
+    "pages/meal-edit/index",
+    "pages/me/index",
+    "pages/profile/index",
+    "pages/goals/index",
+    "pages/delete-account/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "FormTally",
+    "navigationBarBackgroundColor": "#fafbf9",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fafbf9"
+  },
+  "tabBar": {
+    "color": "#626b75",
+    "selectedColor": "#155e4e",
+    "backgroundColor": "#ffffff",
+    "list": [
+      { "pagePath": "pages/today/index", "text": "今日" },
+      { "pagePath": "pages/meal-capture/index", "text": "记录" },
+      { "pagePath": "pages/history/index", "text": "历史" },
+      { "pagePath": "pages/me/index", "text": "我的" }
+    ]
+  },
+  "sitemapLocation": "sitemap.json"
+}

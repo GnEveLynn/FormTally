@@ -1,0 +1,10 @@
+.page { min-height: 100vh; padding: 48rpx; display: grid; align-content: center; gap: 28rpx; text-align: center; }
+.eyebrow { color: var(--ft-color-text-muted); font-size: 24rpx; font-weight: 700; letter-spacing: 6rpx; }
+.title { font-size: var(--ft-font-size-title); font-weight: 700; }
+.preview { width: 100%; height: 640rpx; border-radius: 30rpx; background: #e5ebe8; }
+.muted { color: var(--ft-color-text-muted); }
+.actions { display: grid; gap: 20rpx; }
+.primary, .secondary { min-height: 96rpx; border-radius: 999rpx; font-weight: 700; }
+.primary { background: var(--ft-color-text); color: #fff; }
+.secondary { border: 2rpx solid #cbd5d1; background: #fff; color: var(--ft-color-text); }
+.error { color: #a22b2b; }

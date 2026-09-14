@@ -40,6 +40,8 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, r, code, name, message)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: auth.SessionCookieName, Value: "", Path: "/", HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode, Expires: time.Unix(1, 0), MaxAge: -1})
+	if credential, err := auth.SessionCredential(r); err == nil && credential.Kind == auth.CredentialCookie {
+		http.SetCookie(w, &http.Cookie{Name: auth.SessionCookieName, Value: "", Path: "/", HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode, Expires: time.Unix(1, 0), MaxAge: -1})
+	}
 	httpapi.WriteJSON(w, http.StatusAccepted, map[string]any{"accountDeletion": deletion})
 }

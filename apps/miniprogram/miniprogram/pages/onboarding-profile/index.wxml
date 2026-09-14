@@ -1,0 +1,20 @@
+<view class="page">
+  <view class="step">第 1 步，共 3 步</view>
+  <view class="title">完善身体资料</view>
+  <view class="intro">用于估算每日营养目标，你可以之后修改。</view>
+
+  <view class="field"><text>生理性别</text><picker range="{{sexLabels}}" value="{{sexIndex}}" bindchange="onSexChange"><view class="control">{{sexLabels[sexIndex]}}</view></picker></view>
+  <view class="field"><text>出生日期</text><picker mode="date" value="{{profile.birthDate}}" bindchange="onBirthDateChange"><view class="control">{{profile.birthDate || '请选择'}}</view></picker><text wx:if="{{errors.birthDate}}" class="error">{{errors.birthDate}}</text></view>
+  <view class="field"><text>身高（cm）</text><input class="control" type="digit" value="{{profile.heightCm}}" bindinput="onHeightInput" /><text wx:if="{{errors.heightCm}}" class="error">{{errors.heightCm}}</text></view>
+  <view class="field"><text>体重（kg）</text><input class="control" type="digit" value="{{profile.weightKg}}" bindinput="onWeightInput" /><text wx:if="{{errors.weightKg}}" class="error">{{errors.weightKg}}</text></view>
+  <view class="field"><text>活动水平</text><picker range="{{activityLabels}}" value="{{activityIndex}}" bindchange="onActivityChange"><view class="control">{{activityLabels[activityIndex]}}</view></picker></view>
+
+  <checkbox-group class="health" bindchange="onHealthChange">
+    <view>以下情况适用时请选择</view>
+    <label><checkbox value="pregnant" checked="{{profile.healthContext.pregnant}}" />孕期</label>
+    <label><checkbox value="breastfeeding" checked="{{profile.healthContext.breastfeeding}}" />哺乳期</label>
+    <label><checkbox value="clinicalDietRequired" checked="{{profile.healthContext.clinicalDietRequired}}" />需要疾病膳食管理</label>
+  </checkbox-group>
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
+  <button class="primary" bindtap="submit" loading="{{busy}}" disabled="{{busy}}">下一步</button>
+</view>

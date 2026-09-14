@@ -1,0 +1,1 @@
+.page{padding:32rpx;display:grid;gap:22rpx}.title{font-size:48rpx;font-weight:700}.notice{padding:20rpx;background:#fff2d8;border-radius:16rpx}.field,.result{min-height:88rpx;padding:22rpx;border:1rpx solid #cbd5d1;border-radius:16rpx;background:#fff}.result{display:grid;gap:18rpx}.error{color:#a22b2b}.success{color:#155e4e}

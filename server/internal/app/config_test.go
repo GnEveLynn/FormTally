@@ -3,6 +3,7 @@ package app
 import (
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -182,6 +183,76 @@ func TestLoadConfigRejectsInvalidOpenAIBaseURL(t *testing.T) {
 			t.Setenv("OPENAI_BASE_URL", value)
 			if _, err := LoadConfig(); err == nil {
 				t.Fatalf("invalid OPENAI_BASE_URL %q accepted", value)
+			}
+		})
+	}
+}
+
+func TestLoadConfigWeChatDefaultsAndAllowsDisabledDevelopment(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://formtally:formtally@127.0.0.1:5432/formtally?sslmode=disable")
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("WECHAT_APP_ID", "")
+	t.Setenv("WECHAT_APP_SECRET", "")
+	t.Setenv("WECHAT_API_BASE_URL", "https://api.weixin.qq.com")
+	t.Setenv("WECHAT_API_TIMEOUT", "5s")
+
+	cfg, err := LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.WeChatAppID != "" || cfg.WeChatAppSecret != "" || cfg.WeChatAPIBaseURL != "https://api.weixin.qq.com" || cfg.WeChatAPITimeout != 5*time.Second {
+		t.Fatalf("WeChat config = %+v", cfg)
+	}
+}
+
+func TestLoadConfigWeChatRequiresCredentialsTogether(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://formtally:formtally@127.0.0.1:5432/formtally?sslmode=disable")
+	t.Setenv("APP_ENV", "development")
+	t.Setenv("WECHAT_API_BASE_URL", "https://api.weixin.qq.com")
+	t.Setenv("WECHAT_API_TIMEOUT", "5s")
+
+	for name, values := range map[string][2]string{
+		"missing_secret": {"wx-app", ""},
+		"missing_app_id": {"", "wx-secret"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Setenv("WECHAT_APP_ID", values[0])
+			t.Setenv("WECHAT_APP_SECRET", values[1])
+			if _, err := LoadConfig(); err == nil || !strings.Contains(err.Error(), "WECHAT_APP_ID") {
+				t.Fatalf("LoadConfig() error = %v", err)
+			}
+		})
+	}
+}
+
+func TestLoadConfigWeChatRejectsUnsafeProductionBaseURL(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://formtally:formtally@127.0.0.1:5432/formtally?sslmode=disable")
+	t.Setenv("APP_ENV", "production")
+	t.Setenv("WECHAT_APP_ID", "wx-app")
+	t.Setenv("WECHAT_APP_SECRET", "wx-secret")
+	t.Setenv("WECHAT_API_TIMEOUT", "5s")
+
+	for _, value := range []string{"http://api.weixin.qq.com", "https://wechat.example.com", "https://api.weixin.qq.com/path"} {
+		t.Run(value, func(t *testing.T) {
+			t.Setenv("WECHAT_API_BASE_URL", value)
+			if _, err := LoadConfig(); err == nil || !strings.Contains(err.Error(), "WECHAT_API_BASE_URL") {
+				t.Fatalf("LoadConfig() error = %v", err)
+			}
+		})
+	}
+}
+
+func TestLoadConfigWeChatValidatesPositiveTimeout(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://formtally:formtally@127.0.0.1:5432/formtally?sslmode=disable")
+	t.Setenv("WECHAT_APP_ID", "")
+	t.Setenv("WECHAT_APP_SECRET", "")
+	t.Setenv("WECHAT_API_BASE_URL", "https://api.weixin.qq.com")
+
+	for _, value := range []string{"invalid", "0s", "-1s"} {
+		t.Run(value, func(t *testing.T) {
+			t.Setenv("WECHAT_API_TIMEOUT", value)
+			if _, err := LoadConfig(); err == nil || !strings.Contains(err.Error(), "WECHAT_API_TIMEOUT") {
+				t.Fatalf("LoadConfig() error = %v", err)
 			}
 		})
 	}

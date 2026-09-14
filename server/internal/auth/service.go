@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GnEveLynn/FormTally/server/internal/sms"
+	"github.com/GnEveLynn/FormTally/server/internal/wechat"
 )
 
 var mainlandPhone = regexp.MustCompile(`^\+861[3-9][0-9]{9}$`)
@@ -18,11 +19,16 @@ var mainlandPhone = regexp.MustCompile(`^\+861[3-9][0-9]{9}$`)
 type Service struct {
 	store  *PostgresStore
 	sender sms.Sender
+	weChat wechat.Client
 	now    func() time.Time
 }
 
-func NewService(store *PostgresStore, sender sms.Sender) *Service {
-	return &Service{store: store, sender: sender, now: time.Now}
+func NewService(store *PostgresStore, sender sms.Sender, weChatClients ...wechat.Client) *Service {
+	service := &Service{store: store, sender: sender, now: time.Now}
+	if len(weChatClients) > 0 {
+		service.weChat = weChatClients[0]
+	}
+	return service
 }
 
 func validMainlandPhone(phone string) bool { return mainlandPhone.MatchString(phone) }
@@ -81,9 +87,8 @@ func (s *Service) CreateSession(ctx context.Context, input CreateSessionInput) (
 	if !validMainlandPhone(input.Phone) || len(input.Code) != 6 || input.VerificationRequestID == "" {
 		return SessionResult{}, "", &Error{Code: "VERIFICATION_CODE_INVALID", Message: "验证码错误", Status: http.StatusUnprocessableEntity}
 	}
-	token := "sess_" + rand.Text() + rand.Text()
-	now := s.now().UTC()
-	result, err := s.store.ConsumeCodeAndCreateSession(ctx, input, codeHash(input.VerificationRequestID, input.Code), tokenHash(token), now, now.Add(30*24*time.Hour))
+	token, hash, now, expires := s.newSession()
+	result, err := s.store.ConsumeCodeAndCreateSession(ctx, input, codeHash(input.VerificationRequestID, input.Code), hash, now, expires)
 	return result, token, err
 }
 
@@ -107,6 +112,12 @@ func VerificationCodeHash(id, code string) []byte {
 }
 func codeHash(id, code string) []byte { return VerificationCodeHash(id, code) }
 func tokenHash(token string) []byte   { sum := sha256.Sum256([]byte(token)); return sum[:] }
+
+func (s *Service) newSession() (string, []byte, time.Time, time.Time) {
+	token := "sess_" + rand.Text() + rand.Text()
+	now := s.now().UTC()
+	return token, tokenHash(token), now, now.Add(30 * 24 * time.Hour)
+}
 func unauthenticated() error {
 	return &Error{Code: "UNAUTHENTICATED", Message: "请先登录", Status: http.StatusUnauthorized}
 }

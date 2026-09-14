@@ -1,0 +1,1 @@
+.page{padding:32rpx;display:grid;gap:24rpx}.eyebrow{color:#6a7773;font-size:24rpx;letter-spacing:4rpx}.title{font-size:56rpx;font-weight:700}.card,.menu{padding:28rpx;border:1rpx solid #dbe5e1;border-radius:20rpx;background:#fff}.menu{display:flex;justify-content:space-between}.heading{font-weight:700}.danger{color:#a22b2b;border-color:#a22b2b}

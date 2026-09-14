@@ -8,6 +8,17 @@ import (
 	"time"
 )
 
+type bearerCredentialKey struct{}
+
+func WithBearerCredential(ctx context.Context) context.Context {
+	return context.WithValue(ctx, bearerCredentialKey{}, true)
+}
+
+func hasBearerCredential(ctx context.Context) bool {
+	value, _ := ctx.Value(bearerCredentialKey{}).(bool)
+	return value
+}
+
 func middleware(logger *slog.Logger, allowedOrigins []string) func(http.Handler) http.Handler {
 	allowed := make(map[string]struct{}, len(allowedOrigins))
 	for _, origin := range allowedOrigins {
@@ -55,7 +66,7 @@ func withRecovery(next http.Handler) http.Handler {
 
 func withOrigin(allowed map[string]struct{}, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if changesState(r.Method) {
+		if changesState(r.Method) && !publicMutation(r) && (browserAuthMutation(r) || !hasBearerCredential(r.Context())) {
 			if _, ok := allowed[r.Header.Get("Origin")]; !ok {
 				WriteError(w, r, http.StatusForbidden, "ORIGIN_NOT_ALLOWED", "请求来源不被允许")
 				return
@@ -63,6 +74,20 @@ func withOrigin(allowed map[string]struct{}, next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+func browserAuthMutation(r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		return false
+	}
+	return r.URL.Path == "/v1/auth/codes" || r.URL.Path == "/v1/auth/sessions"
+}
+
+func publicMutation(r *http.Request) bool {
+	if r.Method != http.MethodPost {
+		return false
+	}
+	return r.URL.Path == "/v1/auth/wechat/sessions" || r.URL.Path == "/v1/auth/wechat/phone-bindings"
 }
 
 func changesState(method string) bool {

@@ -1,0 +1,19 @@
+.page { padding: 40rpx 40rpx 72rpx; }
+.title { font-size: var(--ft-font-size-title); font-weight: 700; }
+.notice, .warning { margin-top: 20rpx; padding: 24rpx; border-radius: 24rpx; line-height: 1.55; }
+.notice { background: #e7f8f0; }
+.warning { background: #fff4d6; color: #725300; }
+.item-card { margin-top: 28rpx; padding: 28rpx; border: 2rpx solid #dfe8e4; border-radius: 28rpx; background: #fff; }
+.item-head { display: flex; align-items: center; justify-content: space-between; }
+.item-title { font-weight: 700; }
+.remove { margin: 0; border: 0; background: transparent; color: #a22b2b; font-size: 28rpx; }
+.field { display: grid; gap: 10rpx; margin-top: 20rpx; font-size: 28rpx; font-weight: 700; }
+.control { min-height: 88rpx; padding: 0 20rpx; border: 2rpx solid #cbd5d1; border-radius: 20rpx; background: #fff; font-weight: 400; }
+.nutrition-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18rpx; }
+.compact { min-height: 80rpx; }
+.primary, .secondary { min-height: 96rpx; margin-top: 28rpx; border-radius: 999rpx; font-weight: 700; }
+.primary { background: var(--ft-color-text); color: #fff; }
+.secondary { border: 2rpx solid #cbd5d1; background: #fff; color: var(--ft-color-text); }
+.totals { display: grid; gap: 10rpx; margin-top: 28rpx; padding: 28rpx; border-radius: 26rpx; background: #e7f8f0; }
+.total-energy { font-size: 40rpx; font-weight: 700; }
+.error { margin-top: 20rpx; color: #a22b2b; }

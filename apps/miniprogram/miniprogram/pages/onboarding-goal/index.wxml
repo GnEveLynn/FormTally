@@ -1,0 +1,24 @@
+<view class="page">
+  <view class="step">第 2 步，共 3 步</view>
+  <view class="title">设置营养目标</view>
+
+  <radio-group class="modes" bindchange="onModeChange">
+    <label><radio value="automatic" checked="{{goal.mode === 'automatic'}}" disabled="{{!automaticEligible}}" />自动估算</label>
+    <label><radio value="manual" checked="{{goal.mode === 'manual'}}" />手动设置</label>
+  </radio-group>
+
+  <block wx:if="{{goal.mode === 'automatic'}}">
+    <view class="field"><text>当前目标</text><picker range="{{objectiveLabels}}" value="{{objectiveIndex}}" bindchange="onObjectiveChange"><view class="control">{{objectiveLabels[objectiveIndex]}}</view></picker></view>
+    <view wx:if="{{goal.automatic.objective !== 'maintain'}}" class="field"><text>速度</text><picker range="{{paceLabels}}" value="{{paceIndex}}" bindchange="onPaceChange"><view class="control">{{paceLabels[paceIndex]}}</view></picker></view>
+  </block>
+  <block wx:else>
+    <view wx:if="{{!automaticEligible}}" class="notice">特殊健康状态建议咨询专业人士，当前仅提供手动目标。</view>
+    <view class="field"><text>热量（kcal）</text><input class="control" type="number" data-field="energyKcal" value="{{goal.manual.target.energyKcal}}" bindinput="onManualInput" /></view>
+    <view class="field"><text>蛋白质（g）</text><input class="control" type="digit" data-field="proteinGrams" value="{{goal.manual.target.proteinGrams}}" bindinput="onManualInput" /></view>
+    <view class="field"><text>碳水（g）</text><input class="control" type="digit" data-field="carbGrams" value="{{goal.manual.target.carbGrams}}" bindinput="onManualInput" /></view>
+    <view class="field"><text>脂肪（g）</text><input class="control" type="digit" data-field="fatGrams" value="{{goal.manual.target.fatGrams}}" bindinput="onManualInput" /></view>
+  </block>
+
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
+  <button class="primary" bindtap="submit" loading="{{busy}}" disabled="{{busy}}">预览目标</button>
+</view>

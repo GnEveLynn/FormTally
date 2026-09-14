@@ -4,7 +4,7 @@ ALLOWED_ORIGINS ?= http://127.0.0.1:5173
 APP_ENV ?= development
 SMS_DRIVER ?= test
 
-.PHONY: dev-api dev-h5 db-up migrate migrate-down test-go test-db test-web test-e2e ai-eval build-release scan-artifacts container-build container-check verify verify-rc
+.PHONY: dev-api dev-h5 db-up migrate migrate-down test-go test-db test-web test-e2e test-miniprogram build-miniprogram scan-miniprogram ai-eval build-release scan-artifacts container-build container-check verify verify-rc
 
 dev-api:
 	cd server && DATABASE_URL="$(DATABASE_URL)" ALLOWED_ORIGINS="$(ALLOWED_ORIGINS)" APP_ENV="$(APP_ENV)" SMS_DRIVER="$(SMS_DRIVER)" go run ./cmd/api
@@ -36,6 +36,16 @@ test-web:
 
 test-e2e:
 	npm --prefix apps/web run test:e2e
+
+test-miniprogram:
+	npm run test:miniprogram
+
+build-miniprogram:
+	npm run build:miniprogram
+
+scan-miniprogram: build-miniprogram
+	@test -z "$$(find apps/miniprogram/miniprogram -type f \( -name '.env*' -o -name '*.pem' -o -name '*.key' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.webp' \) -print)"
+	@if grep -RIlE 'WECHAT_APP_SECRET|sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|Bearer[[:space:]]+[A-Za-z0-9_-]{20,}|1[3-9][0-9]{9}' apps/miniprogram/miniprogram --exclude='*.spec.ts'; then exit 1; fi
 
 ai-eval:
 	cd server && go test ./internal/aieval ./cmd/ai-eval -count=1
@@ -80,7 +90,7 @@ container-check: container-build
 	done; \
 	docker logs "$$cid"; exit 1
 
-verify: test-go test-db test-web test-e2e
+verify: test-go test-db test-web test-e2e test-miniprogram build-miniprogram scan-miniprogram
 	npm --prefix apps/web run build
 
 verify-rc: verify ai-eval scan-artifacts container-check

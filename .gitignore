@@ -12,4 +12,6 @@ server/var/
 build/
 testdata/ai-quality/images/
 testdata/ai-quality/*.private.json
+apps/miniprogram/project.private.config.json
+apps/miniprogram/miniprogram/miniprogram_npm/
 .DS_Store

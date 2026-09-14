@@ -1,0 +1,19 @@
+{
+  "name": "@formtally/miniprogram",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@formtally/api-contract": "0.0.0",
+    "@formtally/domain": "0.0.0"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^5.0.0",
+    "typescript": "~6.0.2",
+    "vitest": "^4.1.0"
+  }
+}

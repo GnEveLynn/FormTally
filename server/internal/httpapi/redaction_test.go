@@ -11,7 +11,7 @@ import (
 func TestAccessLogsRedactAuthenticationImageAndProfileData(t *testing.T) {
 	var logs bytes.Buffer
 	router := contractRouter(&logs)
-	body := `{"phone":"+8613812345678","code":"839201","heightCm":178,"weightKg":72.5,"image":"base64-image-secret"}`
+	body := `{"phone":"+8613812345678","code":"839201","heightCm":178.43761,"weightKg":72.59834,"image":"base64-image-secret"}`
 	request := httptest.NewRequest(http.MethodPost, "/v1/account-deletions?token=query-token-secret", strings.NewReader(body))
 	request.Header.Set("Origin", allowedOrigin)
 	request.Header.Set("Authorization", "Bearer authorization-secret")
@@ -20,7 +20,7 @@ func TestAccessLogsRedactAuthenticationImageAndProfileData(t *testing.T) {
 	router.ServeHTTP(response, request)
 
 	logText := logs.String()
-	for _, secret := range []string{"+8613812345678", "839201", "178", "72.5", "base64-image-secret", "query-token-secret", "authorization-secret", "session-cookie-secret"} {
+	for _, secret := range []string{"+8613812345678", "839201", "178.43761", "72.59834", "base64-image-secret", "query-token-secret", "authorization-secret", "session-cookie-secret"} {
 		if strings.Contains(logText, secret) {
 			t.Fatalf("access log leaked %q: %s", secret, logText)
 		}

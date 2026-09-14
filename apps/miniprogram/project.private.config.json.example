@@ -1,0 +1,7 @@
+{
+  "appid": "wx-your-app-id",
+  "projectname": "FormTally-local",
+  "setting": {
+    "urlCheck": false
+  }
+}
