@@ -23,6 +23,7 @@
     "navigationBarTextStyle": "black",
     "backgroundColor": "#fafbf9"
   },
+  "lazyCodeLoading": "requiredComponents",
   "tabBar": {
     "custom": true,
     "color": "#626b75",
