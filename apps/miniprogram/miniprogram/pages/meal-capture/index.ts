@@ -12,11 +12,17 @@ Page({
     busy: false,
     error: '',
     offerAlbum: false,
+    description: '',
   },
 
   onShow() {
     const mealTypeIndex = Math.max(0, mealTypes.indexOf(mealDraftStore.state.mealType as typeof mealTypes[number]))
-    this.setData({ imagePath: mealDraftStore.state.image?.path ?? '', mealTypeIndex })
+    this.setData({ imagePath: mealDraftStore.state.image?.path ?? '', mealTypeIndex, description: mealDraftStore.state.description })
+  },
+
+  onDescriptionInput(event: { detail: { value: string } }) {
+    mealDraftStore.state.description = event.detail.value
+    this.setData({ description: event.detail.value })
   },
 
   onMealTypeChange(event: { detail: { value: string } }) {

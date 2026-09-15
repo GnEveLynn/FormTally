@@ -24,7 +24,11 @@ async function choose(event: Event) {
 <template>
   <section>
     <p>{{ props.occurredAt }} · {{ mealLabels[props.mealType] ?? '未知餐别' }}</p>
-    <input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" @change="choose" />
+    <label class="picker"><span class="camera">▣</span><strong>拍照或选择食物照片</strong><small>支持 JPEG、PNG、WebP</small><input type="file" accept="image/jpeg,image/png,image/webp" capture="environment" @change="choose" /></label>
     <img v-if="preview" :src="preview" alt="餐食图片预览" />
   </section>
 </template>
+
+<style scoped>
+section{display:grid;gap:.7rem}p{margin:0;color:#71807a;font-size:.82rem}.picker{display:grid;justify-items:center;gap:.35rem;padding:1.5rem;border:1px dashed #cbd9d2;border-radius:1rem;color:#53635d;cursor:pointer}.picker input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.camera{font-size:2rem;color:#6f7c77}.picker small{color:#89948f;font-weight:400}img{width:100%;max-height:18rem;object-fit:cover;border-radius:1rem}
+</style>

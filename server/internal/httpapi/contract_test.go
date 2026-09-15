@@ -133,7 +133,7 @@ func assertCamelCaseKeys(t *testing.T, value any) {
 
 type fixedAnalyzer struct{}
 
-func (fixedAnalyzer) Analyze(context.Context, []byte) (analysis.Result, analysis.Metadata, error) {
+func (fixedAnalyzer) Analyze(context.Context, []byte, string) (analysis.Result, analysis.Metadata, error) {
 	assumption := "按一份熟制鸡肉饭估算"
 	return analysis.Result{Items: []analysis.Item{{
 		Name: "鸡肉饭", Grams: 350, EnergyKcal: 520, ProteinGrams: 28, CarbGrams: 65, FatGrams: 17,

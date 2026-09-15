@@ -10,9 +10,11 @@ describe('meal draft store', () => {
     const store = createMealDraftStore(api)
     store.state.occurredAt = '2026-09-11T12:00:00+08:00'
     store.state.mealType = 'lunch'
+    store.state.description = '鸡胸肉和米饭，少油'
     store.selectImage(new File(['first'], 'first.jpg', { type: 'image/jpeg' }))
     store.selectImage(new File(['second'], 'second.jpg', { type: 'image/jpeg' }))
     await store.analyze()
+    expect(api.createAnalysis.mock.calls[0]![0].description).toBe('鸡胸肉和米饭，少油')
     expect(store.state.status).toBe('failed')
     expect(store.state.occurredAt).toContain('2026-09-11')
     expect(store.state.mealType).toBe('lunch')

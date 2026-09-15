@@ -13,14 +13,29 @@ import (
 )
 
 type fakeAnalyzer struct {
-	calls  int
-	result Result
-	err    error
+	calls       int
+	description string
+	result      Result
+	err         error
 }
 
-func (f *fakeAnalyzer) Analyze(context.Context, []byte) (Result, Metadata, error) {
+func (f *fakeAnalyzer) Analyze(_ context.Context, _ []byte, description string) (Result, Metadata, error) {
 	f.calls++
+	f.description = description
 	return f.result, Metadata{Model: "fake", PromptVersion: PromptVersion}, f.err
+}
+
+func TestCreateAnalysisPassesOneFreeformDescriptionToAI(t *testing.T) {
+	analyzer := &fakeAnalyzer{result: Result{Items: []Item{{Name: "米饭", Grams: 100, EnergyKcal: 116, Confidence: "high"}}}}
+	service := NewService(&memoryDrafts{}, &memoryImages{}, analyzer, nil)
+	service.now = func() time.Time { return time.Date(2026, 9, 15, 8, 0, 0, 0, time.UTC) }
+	_, err := service.Create(context.Background(), "user_1", "key", CreateInput{ProcessingMode: "ai", AIConsentVersion: CurrentAIConsentVersion, OccurredAt: "2026-09-15T12:00:00+08:00", MealType: "lunch", Description: "鸡胸肉和米饭，少油", Image: []byte{1}, Width: 1, Height: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if analyzer.description != "鸡胸肉和米饭，少油" {
+		t.Fatalf("description = %q", analyzer.description)
+	}
 }
 
 type memoryDrafts struct {

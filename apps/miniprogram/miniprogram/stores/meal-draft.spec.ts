@@ -33,12 +33,14 @@ describe('mini-program meal draft store', () => {
     const keys = ['analysis-key', 'retry-key']
     const store = createMealDraftStore(api as any, async () => keys.shift()!)
     store.selectImage(image)
+    store.state.description = '鸡胸肉和米饭，少油'
     await store.analyze()
     await store.analyze()
 
     expect(uploadAnalysis.mock.calls[0]![0].idempotencyKey).toBe('analysis-key')
     expect(uploadAnalysis.mock.calls[1]![0].idempotencyKey).toBe('analysis-key')
     expect(store.state.image).toEqual(image)
+    expect(uploadAnalysis.mock.calls[0]![0].description).toBe('鸡胸肉和米饭，少油')
     expect(store.state.status).toBe('failed')
   })
 

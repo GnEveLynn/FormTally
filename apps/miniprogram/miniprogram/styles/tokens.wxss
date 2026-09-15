@@ -1,7 +1,7 @@
 page {
-  --ft-color-background: #fafbf9;
-  --ft-color-text: #163c35;
-  --ft-color-text-muted: #626b75;
+  --ft-color-background: #f7faf8;
+  --ft-color-text: #173c35;
+  --ft-color-text-muted: #71807a;
   --ft-font-size-title: 64rpx;
   --ft-font-size-body: 32rpx;
   --ft-space-sm: 24rpx;

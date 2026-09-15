@@ -28,6 +28,7 @@ export function createMealDraftStore(client: Client = defaultClient) {
     image: File | null
     occurredAt: string
     mealType: string
+    description: string
     mode: 'ai' | 'manual'
     consentVersion: string
     status: string
@@ -37,7 +38,7 @@ export function createMealDraftStore(client: Client = defaultClient) {
     analyzeKey: string
     retryKey: string
     saveKey: string
-  }>({ image: null, occurredAt: localDateTime(), mealType: 'lunch', mode: 'ai', consentVersion: '', status: 'idle', analysis: null, items: [], error: '', analyzeKey: '', retryKey: '', saveKey: '' })
+  }>({ image: null, occurredAt: localDateTime(), mealType: 'lunch', description: '', mode: 'ai', consentVersion: '', status: 'idle', analysis: null, items: [], error: '', analyzeKey: '', retryKey: '', saveKey: '' })
 
   const applyAnalysis = (analysis: Analysis) => {
     state.analysis = analysis
@@ -64,12 +65,12 @@ export function createMealDraftStore(client: Client = defaultClient) {
       try {
         if (state.analysis?.status === 'failed' && client.retryAnalysis) {
           if (!state.retryKey) state.retryKey = crypto.randomUUID()
-          const response = await client.retryAnalysis(state.analysis.id, { aiConsentVersion: state.consentVersion, expectedRevision: state.analysis.revision }, state.retryKey)
+          const response = await client.retryAnalysis(state.analysis.id, { aiConsentVersion: state.consentVersion, expectedRevision: state.analysis.revision, ...(state.description.trim() ? { description: state.description.trim() } : {}) }, state.retryKey)
           applyAnalysis(response.analysis)
           return
         }
         if (!state.analyzeKey) state.analyzeKey = crypto.randomUUID()
-        const response = await client.createAnalysis({ image: state.image, processingMode: state.mode, occurredAt: state.occurredAt, mealType: state.mealType, aiConsentVersion: state.consentVersion || undefined }, state.analyzeKey)
+        const response = await client.createAnalysis({ image: state.image, processingMode: state.mode, occurredAt: state.occurredAt, mealType: state.mealType, description: state.description.trim() || undefined, aiConsentVersion: state.consentVersion || undefined }, state.analyzeKey)
         applyAnalysis(response.analysis)
       } catch (error) {
         state.status = 'failed'
@@ -93,6 +94,7 @@ export function createMealDraftStore(client: Client = defaultClient) {
       state.image = null
       state.analysis = null
       state.items = []
+      state.description = ''
       state.status = 'idle'
       state.error = ''
       state.analyzeKey = ''

@@ -11,7 +11,7 @@ type Metadata struct {
 }
 
 type Analyzer interface {
-	Analyze(context.Context, []byte) (Result, Metadata, error)
+	Analyze(context.Context, []byte, string) (Result, Metadata, error)
 }
 
 type Failure struct {

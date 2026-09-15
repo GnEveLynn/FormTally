@@ -9,6 +9,8 @@
     <button class="primary" bindtap="chooseCamera" loading="{{busy}}" disabled="{{busy}}">拍照</button>
     <button class="secondary" bindtap="chooseAlbum" disabled="{{busy}}">从相册选择</button>
   </view>
+  <view class="field"><text>补充描述（选填）</text><textarea class="description" value="{{description}}" maxlength="500" placeholder="例如：鸡胸肉、米饭和西兰花，少油、酱汁另放" bindinput="onDescriptionInput" /></view>
+  <view class="tip">AI 会结合照片，自行判断食物、份量、做法和备注。</view>
   <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
   <button wx:if="{{offerAlbum}}" class="secondary" bindtap="chooseAlbum">改用相册</button>
 

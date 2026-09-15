@@ -10,7 +10,7 @@ type DraftStatus = 'idle' | 'selected' | 'analyzing' | 'ready' | 'failed' | 'sav
 
 interface MealDraftClient {
   uploadAnalysis: typeof uploadAnalysis
-  retryAnalysis(id: string, input: { aiConsentVersion: string; expectedRevision: number }, key: string): Promise<AnalysisResponse>
+  retryAnalysis(id: string, input: { aiConsentVersion: string; expectedRevision: number; description?: string }, key: string): Promise<AnalysisResponse>
   saveMeal(input: SaveMealInput, key: string): Promise<SaveMealResponse>
 }
 
@@ -18,6 +18,7 @@ export interface MealDraftState {
   image: ProcessedImage | null
   occurredAt: string
   mealType: string
+  description: string
   mode: 'ai' | 'manual'
   consentVersion: string
   status: DraftStatus
@@ -57,7 +58,7 @@ export function emptyMealItem(): MealItem {
 
 export function createMealDraftStore(client: MealDraftClient = defaultClient, createKey: () => Promise<string> = idempotencyKey) {
   const state: MealDraftState = {
-    image: null, occurredAt: localDateTime(), mealType: 'lunch', mode: 'ai', consentVersion: '', status: 'idle', progress: 0,
+    image: null, occurredAt: localDateTime(), mealType: 'lunch', description: '', mode: 'ai', consentVersion: '', status: 'idle', progress: 0,
     analysis: null, items: [], warnings: [], error: '', errors: {},
   }
   let analyzeKey = ''
@@ -85,7 +86,7 @@ export function createMealDraftStore(client: MealDraftClient = defaultClient, cr
     retryKey = ''
     saveKey = ''
     Object.assign(state, {
-      image: null, occurredAt: localDateTime(), mealType: 'lunch', mode: 'ai', consentVersion: '', status: 'idle', progress: 0,
+      image: null, occurredAt: localDateTime(), mealType: 'lunch', description: '', mode: 'ai', consentVersion: '', status: 'idle', progress: 0,
       analysis: null, items: [], warnings: [], error: '', errors: {},
     })
     notify()
@@ -136,6 +137,7 @@ export function createMealDraftStore(client: MealDraftClient = defaultClient, cr
             const response = await client.retryAnalysis(state.analysis.id, {
               aiConsentVersion: state.consentVersion,
               expectedRevision: state.analysis.revision,
+              ...(state.description.trim() ? { description: state.description.trim() } : {}),
             }, retryKey)
             applyAnalysis(response.analysis)
             retryKey = ''
@@ -146,6 +148,7 @@ export function createMealDraftStore(client: MealDraftClient = defaultClient, cr
               processingMode: 'ai',
               occurredAt: state.occurredAt,
               mealType: state.mealType,
+              description: state.description.trim() || undefined,
               aiConsentVersion: state.consentVersion || undefined,
               idempotencyKey: analyzeKey,
             }, (progress) => { state.progress = progress; notify() })

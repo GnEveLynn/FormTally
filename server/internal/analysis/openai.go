@@ -41,7 +41,7 @@ func NewOpenAIAnalyzer(config OpenAIConfig) *OpenAIAnalyzer {
 	return &OpenAIAnalyzer{client: openai.NewClient(options...), model: config.Model, apiStyle: config.APIStyle, timeout: config.Timeout}
 }
 
-func (a *OpenAIAnalyzer) Analyze(ctx context.Context, image []byte) (Result, Metadata, error) {
+func (a *OpenAIAnalyzer) Analyze(ctx context.Context, image []byte, description string) (Result, Metadata, error) {
 	started := time.Now()
 	ctx, cancel := context.WithTimeout(ctx, a.timeout)
 	defer cancel()
@@ -49,9 +49,9 @@ func (a *OpenAIAnalyzer) Analyze(ctx context.Context, image []byte) (Result, Met
 	var output, responseStatus string
 	var err error
 	if a.apiStyle == "chat_completions" {
-		output, responseStatus, err = a.analyzeChatCompletions(ctx, dataURL)
+		output, responseStatus, err = a.analyzeChatCompletions(ctx, dataURL, description)
 	} else {
-		output, responseStatus, err = a.analyzeResponses(ctx, dataURL)
+		output, responseStatus, err = a.analyzeResponses(ctx, dataURL, description)
 	}
 	meta := Metadata{Model: a.model, PromptVersion: PromptVersion, Duration: time.Since(started)}
 	if err != nil {
@@ -76,10 +76,17 @@ func (a *OpenAIAnalyzer) Analyze(ctx context.Context, image []byte) (Result, Met
 	return normalized, meta, nil
 }
 
-func (a *OpenAIAnalyzer) analyzeResponses(ctx context.Context, dataURL string) (string, string, error) {
+func analysisPrompt(description string) string {
+	if description == "" {
+		return prompt + "\n提示版本：" + PromptVersion
+	}
+	return prompt + "\n用户补充描述（可能包含食物、份量、做法、口味或备注，请结合图片自行判断）：" + description + "\n提示版本：" + PromptVersion
+}
+
+func (a *OpenAIAnalyzer) analyzeResponses(ctx context.Context, dataURL, description string) (string, string, error) {
 	imageInput := responses.ResponseInputContentParamOfInputImage(responses.ResponseInputImageDetailHigh)
 	imageInput.OfInputImage.ImageURL = openai.String(dataURL)
-	content := responses.ResponseInputMessageContentListParam{responses.ResponseInputContentParamOfInputText(prompt + "\n提示版本：" + PromptVersion), imageInput}
+	content := responses.ResponseInputMessageContentListParam{responses.ResponseInputContentParamOfInputText(analysisPrompt(description)), imageInput}
 	response, err := a.client.Responses.New(ctx, responses.ResponseNewParams{
 		Model: a.model,
 		Input: responses.ResponseNewParamsInputUnion{OfInputItemList: responses.ResponseInputParam{
@@ -94,11 +101,11 @@ func (a *OpenAIAnalyzer) analyzeResponses(ctx context.Context, dataURL string) (
 	return response.OutputText(), string(response.Status), nil
 }
 
-func (a *OpenAIAnalyzer) analyzeChatCompletions(ctx context.Context, dataURL string) (string, string, error) {
+func (a *OpenAIAnalyzer) analyzeChatCompletions(ctx context.Context, dataURL, description string) (string, string, error) {
 	response, err := a.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
 		Model: a.model,
 		Messages: []openai.ChatCompletionMessageParamUnion{openai.UserMessage([]openai.ChatCompletionContentPartUnionParam{
-			openai.TextContentPart(prompt + "\n提示版本：" + PromptVersion),
+			openai.TextContentPart(analysisPrompt(description)),
 			openai.ImageContentPart(openai.ChatCompletionContentPartImageImageURLParam{URL: dataURL, Detail: "high"}),
 		})},
 		ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{OfJSONSchema: &openai.ResponseFormatJSONSchemaParam{

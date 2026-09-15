@@ -7,6 +7,7 @@ export interface AnalysisUpload {
   processingMode: 'ai' | 'manual'
   occurredAt: string
   mealType: string
+  description?: string
   aiConsentVersion?: string
   idempotencyKey: string
 }
@@ -28,6 +29,7 @@ export function uploadAnalysis(input: AnalysisUpload, onProgress?: (percent: num
         processingMode: input.processingMode,
         occurredAt: input.occurredAt,
         mealType: input.mealType,
+        ...(input.description ? { description: input.description } : {}),
         ...(input.aiConsentVersion ? { aiConsentVersion: input.aiConsentVersion } : {}),
       },
       success(response) {

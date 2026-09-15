@@ -36,6 +36,7 @@ describe('meal analysis upload', () => {
       processingMode: 'ai',
       occurredAt: '2026-09-14T12:00:00+08:00',
       mealType: 'lunch',
+      description: '鸡胸肉和米饭，少油',
       aiConsentVersion: '2026-09-10',
       idempotencyKey: 'analysis-key',
     }, onProgress)
@@ -48,6 +49,7 @@ describe('meal analysis upload', () => {
         processingMode: 'ai',
         occurredAt: '2026-09-14T12:00:00+08:00',
         mealType: 'lunch',
+        description: '鸡胸肉和米饭，少油',
         aiConsentVersion: '2026-09-10',
       },
     })

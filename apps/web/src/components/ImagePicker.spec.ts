@@ -11,6 +11,7 @@ describe('ImagePicker', () => {
     expect(input.attributes('capture')).toBe('environment')
     expect(wrapper.text()).toContain('2026-09-11T12:00')
     expect(wrapper.text()).toContain('午餐')
+    expect(wrapper.get('label').text()).toContain('拍照或选择食物照片')
     expect(wrapper.text()).not.toContain('lunch')
   })
 })

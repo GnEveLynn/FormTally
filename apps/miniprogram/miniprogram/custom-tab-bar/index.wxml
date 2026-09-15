@@ -1,0 +1,1 @@
+<view class="tabbar"><button wx:for="{{items}}" wx:key="index" data-index="{{index}}" data-path="{{item.path}}" class="tab {{index === 1 ? 'record' : selected === index ? 'active' : ''}}" bindtap="switchTab"><text class="icon">{{item.icon}}</text><text>{{item.text}}</text></button></view>

@@ -22,9 +22,9 @@ describe('design token build', () => {
 
     expect(second).toEqual(first)
     expect(first.css).toBe(`:root {
-  --ft-color-background: #fafbf9;
-  --ft-color-text: #163c35;
-  --ft-color-text-muted: #626b75;
+  --ft-color-background: #f7faf8;
+  --ft-color-text: #173c35;
+  --ft-color-text-muted: #71807a;
   --ft-font-size-title: 2rem;
   --ft-font-size-body: 1rem;
   --ft-space-sm: 0.75rem;

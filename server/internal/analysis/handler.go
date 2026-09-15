@@ -53,7 +53,7 @@ func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
 		h.imageError(w, r, err)
 		return
 	}
-	view, err := h.service.Create(r.Context(), userID, r.Header.Get("Idempotency-Key"), CreateInput{ProcessingMode: r.FormValue("processingMode"), AIConsentVersion: r.FormValue("aiConsentVersion"), OccurredAt: r.FormValue("occurredAt"), MealType: r.FormValue("mealType"), Image: processed.Bytes, Width: processed.Width, Height: processed.Height})
+	view, err := h.service.Create(r.Context(), userID, r.Header.Get("Idempotency-Key"), CreateInput{ProcessingMode: r.FormValue("processingMode"), AIConsentVersion: r.FormValue("aiConsentVersion"), OccurredAt: r.FormValue("occurredAt"), MealType: r.FormValue("mealType"), Description: r.FormValue("description"), Image: processed.Bytes, Width: processed.Width, Height: processed.Height})
 	if h.writeServiceError(w, r, err) {
 		return
 	}
@@ -105,6 +105,7 @@ func (h *Handler) retry(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		AIConsentVersion string `json:"aiConsentVersion"`
 		ExpectedRevision int    `json:"expectedRevision"`
+		Description      string `json:"description"`
 	}
 	decoder := json.NewDecoder(io.LimitReader(r.Body, 1<<20))
 	decoder.DisallowUnknownFields()
@@ -112,7 +113,7 @@ func (h *Handler) retry(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "请求格式无效")
 		return
 	}
-	view, err := h.service.Retry(r.Context(), userID, r.PathValue("analysisId"), r.Header.Get("Idempotency-Key"), input.AIConsentVersion, input.ExpectedRevision)
+	view, err := h.service.RetryWithDescription(r.Context(), userID, r.PathValue("analysisId"), r.Header.Get("Idempotency-Key"), input.AIConsentVersion, input.ExpectedRevision, input.Description)
 	if h.writeServiceError(w, r, err) {
 		return
 	}

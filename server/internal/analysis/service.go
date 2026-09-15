@@ -80,9 +80,9 @@ type Draft struct {
 	CreatedAt, UpdatedAt                                              time.Time
 }
 type CreateInput struct {
-	ProcessingMode, AIConsentVersion, OccurredAt, MealType string
-	Image                                                  []byte
-	Width, Height                                          int
+	ProcessingMode, AIConsentVersion, OccurredAt, MealType, Description string
+	Image                                                               []byte
+	Width, Height                                                       int
 }
 
 type Repository interface {
@@ -146,7 +146,7 @@ func (s *Service) Create(ctx context.Context, userID, key string, input CreateIn
 		if err := s.repo.SaveConsent(ctx, userID, input.AIConsentVersion, now); err != nil {
 			return View{}, err
 		}
-		result, meta, analyzeErr := s.analyzer.Analyze(ctx, input.Image)
+		result, meta, analyzeErr := s.analyzer.Analyze(ctx, input.Image, input.Description)
 		draft.Metadata = meta
 		if analyzeErr != nil {
 			draft.Status = "failed"
@@ -185,6 +185,10 @@ func (s *Service) Get(ctx context.Context, userID, id string) (View, error) {
 }
 
 func (s *Service) Retry(ctx context.Context, userID, id, key, consent string, expectedRevision int) (View, error) {
+	return s.RetryWithDescription(ctx, userID, id, key, consent, expectedRevision, "")
+}
+
+func (s *Service) RetryWithDescription(ctx context.Context, userID, id, key, consent string, expectedRevision int, description string) (View, error) {
 	if consent != CurrentAIConsentVersion {
 		return View{}, ErrAIConsentRequired
 	}
@@ -231,7 +235,7 @@ func (s *Service) Retry(ctx context.Context, userID, id, key, consent string, ex
 	if err := s.repo.Update(ctx, *draft); err != nil {
 		return View{}, err
 	}
-	result, meta, analyzeErr := s.analyzer.Analyze(ctx, image)
+	result, meta, analyzeErr := s.analyzer.Analyze(ctx, image, description)
 	draft.Metadata = meta
 	if analyzeErr != nil {
 		draft.Status = "failed"
@@ -266,7 +270,7 @@ func (s *Service) Discard(ctx context.Context, userID, id string, revision int) 
 }
 
 func (s *Service) validate(input CreateInput) (time.Time, error) {
-	if (input.ProcessingMode != "ai" && input.ProcessingMode != "manual") || (input.MealType != "breakfast" && input.MealType != "lunch" && input.MealType != "dinner" && input.MealType != "snack") || len(input.Image) == 0 || input.Width < 1 || input.Height < 1 {
+	if (input.ProcessingMode != "ai" && input.ProcessingMode != "manual") || (input.MealType != "breakfast" && input.MealType != "lunch" && input.MealType != "dinner" && input.MealType != "snack") || len(input.Image) == 0 || input.Width < 1 || input.Height < 1 || len([]rune(input.Description)) > 500 {
 		return time.Time{}, ErrInvalid
 	}
 	occurred, err := time.Parse(time.RFC3339, input.OccurredAt)
@@ -302,7 +306,7 @@ func analysisFailure(err error) *FailureView {
 	return &FailureView{Code: "AI_UNAVAILABLE", Message: "分析服务暂时不可用，可以稍后重试", Retryable: true}
 }
 func createFingerprint(input CreateInput) string {
-	sum := sha256.Sum256(append([]byte(fmt.Sprintf("%s|%s|%s|%s|", input.ProcessingMode, input.AIConsentVersion, input.OccurredAt, input.MealType)), input.Image...))
+	sum := sha256.Sum256(append([]byte(fmt.Sprintf("%s|%s|%s|%s|%s|", input.ProcessingMode, input.AIConsentVersion, input.OccurredAt, input.MealType, input.Description)), input.Image...))
 	return hex.EncodeToString(sum[:])
 }
 

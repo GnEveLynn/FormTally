@@ -24,14 +24,14 @@ func TestOpenAIAnalyzerSendsImageSchemaPromptVersionAndDoesNotStoreResponse(t *t
 		return &http.Response{StatusCode: 200, Status: "200 OK", Header: http.Header{"Content-Type": {"application/json"}}, Body: io.NopCloser(strings.NewReader(response)), Request: r}, nil
 	})}
 	analyzer := NewOpenAIAnalyzer(OpenAIConfig{APIKey: "test-key", Model: "test-model", Timeout: time.Second, BaseURL: "https://api.test/v1", HTTPClient: client})
-	result, meta, err := analyzer.Analyze(context.Background(), []byte{1, 2, 3})
+	result, meta, err := analyzer.Analyze(context.Background(), []byte{1, 2, 3}, "鸡胸肉和米饭，少油")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(result.Items) != 1 || meta.Model != "test-model" || meta.PromptVersion != PromptVersion {
 		t.Fatalf("result=%+v meta=%+v", result, meta)
 	}
-	for _, required := range []string{"data:image/jpeg;base64,AQID", `"type":"json_schema"`, PromptVersion, `"store":false`} {
+	for _, required := range []string{"data:image/jpeg;base64,AQID", `"type":"json_schema"`, PromptVersion, "鸡胸肉和米饭，少油", `"store":false`} {
 		if !bytes.Contains([]byte(requestBody), []byte(required)) {
 			t.Fatalf("request missing %q: %s", required, requestBody)
 		}
@@ -47,7 +47,7 @@ func TestOpenAIAnalyzerUsesChatCompletionsForQwenStructuredOutput(t *testing.T) 
 		return &http.Response{StatusCode: 200, Status: "200 OK", Header: http.Header{"Content-Type": {"application/json"}}, Body: io.NopCloser(strings.NewReader(response)), Request: r}, nil
 	})}
 	analyzer := NewOpenAIAnalyzer(OpenAIConfig{APIKey: "test-key", Model: "test-model", APIStyle: "chat_completions", Timeout: time.Second, BaseURL: "https://api.test/v1", HTTPClient: client})
-	result, meta, err := analyzer.Analyze(context.Background(), []byte{1, 2, 3})
+	result, meta, err := analyzer.Analyze(context.Background(), []byte{1, 2, 3}, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestOpenAILive(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	result, _, err := NewOpenAIAnalyzer(OpenAIConfig{APIKey: key, Model: model, APIStyle: os.Getenv("OPENAI_API_STYLE"), BaseURL: os.Getenv("OPENAI_BASE_URL"), Timeout: 30 * time.Second}).Analyze(context.Background(), imageBytes)
+	result, _, err := NewOpenAIAnalyzer(OpenAIConfig{APIKey: key, Model: model, APIStyle: os.Getenv("OPENAI_API_STYLE"), BaseURL: os.Getenv("OPENAI_BASE_URL"), Timeout: 30 * time.Second}).Analyze(context.Background(), imageBytes, "")
 	if err != nil {
 		t.Fatal(err)
 	}

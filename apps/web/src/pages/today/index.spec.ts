@@ -2,6 +2,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../../api/days', () => ({ getDay: vi.fn() }))
+vi.mock('vue-router', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 
 import { getDay } from '../../api/days'
 import TodayPage from './index.vue'
@@ -16,13 +17,26 @@ const emptyDay = {
 }
 
 describe('TodayPage', () => {
-  beforeEach(() => vi.mocked(getDay).mockResolvedValue(emptyDay))
+  beforeEach(() => { vi.mocked(getDay).mockReset(); vi.mocked(getDay).mockResolvedValue(emptyDay) })
 
   it('shows the explicit empty state and meal entry', async () => {
     const wrapper = mount(TodayPage)
     await flushPromises()
     expect(wrapper.text()).toContain('今天还没有记录')
-    expect(wrapper.get('a[href="/meals/new"]').text()).toContain('记录一餐')
+    await wrapper.get('[data-test="open-record"]').trigger('click')
+    expect(wrapper.get('[role="dialog"]').text()).toContain('记录饮食')
+    expect(wrapper.findAll('textarea')).toHaveLength(1)
+    expect(wrapper.get('textarea').attributes('placeholder')).toContain('少油')
+  })
+
+  it('loads yesterday and tomorrow from the date switcher', async () => {
+    const wrapper = mount(TodayPage)
+    await flushPromises()
+    await wrapper.get('[data-test="date-yesterday"]').trigger('click')
+    await wrapper.get('[data-test="date-tomorrow"]').trigger('click')
+    expect(vi.mocked(getDay).mock.calls.map(([date]) => date)).toEqual([
+      expect.any(String), expect.any(String), expect.any(String),
+    ])
   })
 
   it('renders recorded meals and nutrition progress', async () => {

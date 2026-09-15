@@ -7,9 +7,20 @@ export function localDateAt(date: Date, offsetMinutes = -date.getTimezoneOffset(
   return new Date(date.getTime() + offsetMinutes * 60_000).toISOString().slice(0, 10)
 }
 
+export function dateTabsAt(localDate: string) {
+  const center = new Date(`${localDate}T12:00:00Z`)
+  return [-1, 0, 1].map((offset, index) => {
+    const date = new Date(center)
+    date.setUTCDate(date.getUTCDate() + offset)
+    const value = date.toISOString().slice(0, 10)
+    return { label: ['昨日', '今日', '明日'][index]!, date: value, displayDate: `${date.getUTCMonth() + 1}月${date.getUTCDate()}日` }
+  })
+}
+
 export function createTodayStore(client: { getDay(date: string): Promise<DaySummary> } = daysApi, today: () => string = () => localDateAt(new Date())) {
-  const state: { status: TodayStatus; localDate: string; day: DaySummary | null; error: string } = {
-    status: 'idle', localDate: today(), day: null, error: '',
+  const todayDate = today()
+  const state: { status: TodayStatus; todayDate: string; localDate: string; day: DaySummary | null; error: string } = {
+    status: 'idle', todayDate, localDate: todayDate, day: null, error: '',
   }
 
   async function load(date = today()) {
