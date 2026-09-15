@@ -350,6 +350,22 @@
 
 `onboardingStatus`: `profile_required`、`goal_required` 或 `completed`。
 
+### 7.2.1 微信小程序一键登录
+
+`POST /v1/auth/wechat/sessions`
+
+```json
+{
+  "loginCode": "wx.login 返回的一次性 code",
+  "agreements": {
+    "termsVersion": "2026-09-10",
+    "privacyVersion": "2026-09-10"
+  }
+}
+```
+
+后端向微信换取 OpenID。已有微信身份直接签发 Bearer token；新身份仅在协议版本为当前版本时，于同一事务创建无手机号用户、微信身份、协议记录和会话。响应结构为 `{ "token": "...", ...SessionResponse }`，无手机号用户的 `user.phoneMasked` 为 `null`。OpenID 和微信 `session_key` 均不返回客户端。
+
 ### 7.3 获取当前会话
 
 `GET /v1/auth/session`
@@ -1067,7 +1083,7 @@ AI 失败仍返回 `201 Created`：
 
 ## 14. 删除账户
 
-流程：先调用验证码接口并使用 `purpose: delete_account`，然后调用删除接口。
+有手机号账户先调用验证码接口并使用 `purpose: delete_account`，然后调用删除接口。
 
 `POST /v1/account-deletions`
 
@@ -1078,6 +1094,17 @@ AI 失败仍返回 `201 Created`：
   "confirmation": "DELETE"
 }
 ```
+
+无手机号微信账户使用已认证 Bearer 会话，并在删除时提交新取得的 `wx.login` code：
+
+```json
+{
+  "loginCode": "fresh wx.login code",
+  "confirmation": "DELETE"
+}
+```
+
+服务端重新向微信验证 code，并确认其 OpenID 属于当前用户后才执行删除。Cookie 会话不能使用此路径；仅凭现有 Bearer token 也不能删除。
 
 成功返回 `202 Accepted`，同时撤销全部会话：
 

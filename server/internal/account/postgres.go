@@ -8,6 +8,7 @@ import (
 
 	"github.com/GnEveLynn/FormTally/server/internal/auth"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -40,18 +41,56 @@ func (s *PostgresStore) Delete(ctx context.Context, userID string, input DeleteI
 	if !expires.After(now) {
 		return Deletion{}, ErrExpiredCode
 	}
-	_, err = tx.Exec(ctx, `insert into object_deletions(id,object_key,next_attempt_at,created_at) select 'deletion_'||encode(gen_random_bytes(16),'hex'),image_key,$2,$2 from (select image_key from meal_analyses where user_id=$1 union select image_key from meals where user_id=$1) images where image_key is not null on conflict(object_key) do nothing`, userID, now)
-	if err != nil {
+	if err = queueAndDeleteUser(ctx, tx, userID, now); err != nil {
 		return Deletion{}, err
 	}
 	if _, err = tx.Exec(ctx, `update login_codes set consumed_at=$2 where id=$1`, input.VerificationRequestID, now); err != nil {
 		return Deletion{}, err
 	}
-	if _, err = tx.Exec(ctx, `delete from users where id=$1`, userID); err != nil {
+	if err = tx.Commit(ctx); err != nil {
+		return Deletion{}, err
+	}
+	return acceptedDeletion(now), nil
+}
+
+func (s *PostgresStore) DeleteWithWeChatIdentity(ctx context.Context, userID, openID string, now time.Time) (Deletion, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return Deletion{}, err
+	}
+	defer tx.Rollback(ctx)
+	var owned bool
+	err = tx.QueryRow(ctx, `select true from users u join user_identities i on i.user_id=u.id where u.id=$1 and u.phone is null and u.deleted_at is null and i.provider='wechat_miniprogram' and i.provider_subject=$2 for update of u,i`, userID, openID).Scan(&owned)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Deletion{}, ErrWeChatIdentityMismatch
+	}
+	if err != nil {
+		return Deletion{}, err
+	}
+	if err = queueAndDeleteUser(ctx, tx, userID, now); err != nil {
 		return Deletion{}, err
 	}
 	if err = tx.Commit(ctx); err != nil {
 		return Deletion{}, err
 	}
-	return Deletion{Status: "accepted", AccessRevokedAt: now, PurgeBy: now.Add(30 * 24 * time.Hour)}, nil
+	return acceptedDeletion(now), nil
+}
+
+type deletionTx interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}
+
+func queueAndDeleteUser(ctx context.Context, tx deletionTx, userID string, now time.Time) error {
+	_, err := tx.Exec(ctx, `insert into object_deletions(id,object_key,next_attempt_at,created_at) select 'deletion_'||encode(gen_random_bytes(16),'hex'),image_key,$2,$2 from (select image_key from meal_analyses where user_id=$1 union select image_key from meals where user_id=$1) images where image_key is not null on conflict(object_key) do nothing`, userID, now)
+	if err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, `delete from users where id=$1`, userID); err != nil {
+		return err
+	}
+	return nil
+}
+
+func acceptedDeletion(now time.Time) Deletion {
+	return Deletion{Status: "accepted", AccessRevokedAt: now, PurgeBy: now.Add(30 * 24 * time.Hour)}
 }

@@ -43,15 +43,14 @@ type CreateSessionInput struct {
 }
 
 type WeChatSessionInput struct {
-	LoginCode string
+	LoginCode      string
+	TermsVersion   string
+	PrivacyVersion string
 }
 
 type WeChatSessionResult struct {
-	BindingRequired  bool
-	BindingTicket    string
-	ExpiresInSeconds int
-	Session          SessionResult
-	Token            string
+	Session SessionResult
+	Token   string
 }
 
 type WeChatPhoneBindingInput struct {
@@ -66,9 +65,9 @@ type SessionView struct {
 }
 
 type UserView struct {
-	ID               string `json:"id"`
-	PhoneMasked      string `json:"phoneMasked"`
-	OnboardingStatus string `json:"onboardingStatus"`
+	ID               string  `json:"id"`
+	PhoneMasked      *string `json:"phoneMasked"`
+	OnboardingStatus string  `json:"onboardingStatus"`
 }
 
 type ConsentsView struct {

@@ -1,22 +1,20 @@
-import { bindWeChatPhone, weChatLogin } from '../../platform/auth'
+import { weChatLogin } from '../../platform/auth'
 import { sessionStore } from '../../stores/session'
-import { agreementVersion, nextLoginAction, phoneAuthorization, routeForSession } from './model'
+import { agreementVersion, nextLoginAction, routeForSession } from './model'
 
 Page({
   data: {
     agreementVersion,
     acceptedAgreements: false,
-    bindingTicket: '',
-    needsPhone: false,
     busy: false,
     error: '',
   },
 
   async onLoad() {
-    await this.restoreOrLogin()
+    await this.restore()
   },
 
-  async restoreOrLogin() {
+  async restore() {
     this.setData({ busy: true, error: '' })
     if (sessionStore.state.status === 'failed') await sessionStore.retry()
     else await sessionStore.restore()
@@ -28,18 +26,14 @@ Page({
       this.setData({ busy: false, error: sessionStore.state.error })
       return
     }
-    await this.startWeChatSession()
+    this.setData({ busy: false })
   },
 
   async startWeChatSession() {
-    this.setData({ busy: true, error: '', needsPhone: false, bindingTicket: '' })
+    if (!this.data.acceptedAgreements) { this.setData({ error: '请先阅读并同意服务协议与隐私政策' }); return }
+    this.setData({ busy: true, error: '' })
     try {
-      const result = await weChatLogin()
-      if (result.bindingRequired) {
-        const action = nextLoginAction(result)
-        if ('bindingTicket' in action) this.setData({ needsPhone: true, bindingTicket: action.bindingTicket })
-        return
-      }
+      const result = await weChatLogin({ termsVersion: agreementVersion, privacyVersion: agreementVersion })
       sessionStore.setSession(result)
       const action = nextLoginAction(result)
       if ('route' in action) wx.reLaunch({ url: action.route })
@@ -54,29 +48,4 @@ Page({
     this.setData({ acceptedAgreements: event.detail.value.includes('accepted'), error: '' })
   },
 
-  async onGetPhoneNumber(event: { detail: { code?: string; errMsg?: string } }) {
-    const authorization = phoneAuthorization({
-      acceptedAgreements: this.data.acceptedAgreements,
-      code: event.detail.code,
-      errMsg: event.detail.errMsg,
-    })
-    if ('error' in authorization) {
-      this.setData({ error: authorization.error })
-      return
-    }
-
-    this.setData({ busy: true, error: '' })
-    try {
-      const result = await bindWeChatPhone(this.data.bindingTicket, authorization.code, {
-        termsVersion: agreementVersion,
-        privacyVersion: agreementVersion,
-      })
-      sessionStore.setSession(result)
-      wx.reLaunch({ url: routeForSession(result.user.onboardingStatus) })
-    } catch (error) {
-      this.setData({ error: error instanceof Error ? error.message : '手机号验证失败，请重试' })
-    } finally {
-      this.setData({ busy: false })
-    }
-  },
 })

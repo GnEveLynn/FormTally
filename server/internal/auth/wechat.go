@@ -2,9 +2,7 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
 	"net/http"
-	"time"
 
 	"github.com/GnEveLynn/FormTally/server/internal/wechat"
 )
@@ -27,15 +25,16 @@ func (s *Service) CreateWeChatSession(ctx context.Context, input WeChatSessionIn
 	if err != nil {
 		return WeChatSessionResult{}, err
 	}
-	if found {
-		return WeChatSessionResult{Session: session, Token: token}, nil
+	if !found {
+		if input.TermsVersion != CurrentTermsVersion || input.PrivacyVersion != CurrentPrivacyVersion {
+			return WeChatSessionResult{}, &Error{Code: "AGREEMENT_VERSION_OUTDATED", Message: "协议版本已更新，请重新确认", Status: http.StatusConflict}
+		}
+		session, err = s.store.CreateWeChatUserAndSession(ctx, identity.OpenID, identity.UnionID, input.TermsVersion, input.PrivacyVersion, hash, now, expires)
 	}
-
-	bindingTicket := "wxbind_" + rand.Text() + rand.Text()
-	if err := s.store.CreateWeChatBindingTicket(ctx, tokenHash(bindingTicket), identity.OpenID, identity.UnionID, now, now.Add(5*time.Minute)); err != nil {
+	if err != nil {
 		return WeChatSessionResult{}, err
 	}
-	return WeChatSessionResult{BindingRequired: true, BindingTicket: bindingTicket, ExpiresInSeconds: 300}, nil
+	return WeChatSessionResult{Session: session, Token: token}, nil
 }
 
 func (s *Service) BindWeChatPhone(ctx context.Context, input WeChatPhoneBindingInput) (SessionResult, string, error) {

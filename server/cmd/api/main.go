@@ -93,7 +93,7 @@ func main() {
 	mealService := meals.NewService(meals.NewPostgresStore(pool), idempotencyStore, objectStore)
 	mealHandler := meals.NewHandler(mealService, authenticate)
 	daysHandler := days.NewHandler(days.NewService(days.NewPostgresStore(pool), goals.NewPostgresStore(pool)), authenticate)
-	accountHandler := account.NewHandler(account.NewService(account.NewPostgresStore(pool)), authenticate)
+	accountHandler := account.NewHandler(account.NewService(account.NewPostgresStore(pool), weChatClients...), authenticate)
 	deletionWorker := storage.NewDeletionWorker(storage.NewPostgresDeletionRepository(pool), objectStore)
 	go func() {
 		for {

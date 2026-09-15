@@ -7,7 +7,7 @@ export interface Agreements {
   privacyVersion: string
 }
 
-function loginCode(): Promise<string> {
+export function freshWeChatLoginCode(): Promise<string> {
   return new Promise((resolve, reject) => {
     wx.login({
       success: ({ code }) => code ? resolve(code) : reject(new NetworkError()),
@@ -16,12 +16,12 @@ function loginCode(): Promise<string> {
   })
 }
 
-export async function weChatLogin(): Promise<WeChatSessionResult> {
+export async function weChatLogin(agreements: Agreements): Promise<WeChatSessionResult> {
   const result = await request<WeChatSessionResult>('/v1/auth/wechat/sessions', {
     method: 'POST',
-    body: { loginCode: await loginCode() },
+    body: { loginCode: await freshWeChatLoginCode(), agreements },
   })
-  if (!result.bindingRequired) setSessionToken(result.token)
+  setSessionToken(result.token)
   return result
 }
 

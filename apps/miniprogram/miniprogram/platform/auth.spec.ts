@@ -18,26 +18,27 @@ describe('WeChat auth platform boundary', () => {
         login: vi.fn(({ success }: Record<string, any>) => success({ code: `login-${++loginSequence}` })),
         request: vi.fn((options: Record<string, any>) => {
           const loginCode = options.data.loginCode
-          options.success({ statusCode: 200, data: { bindingRequired: true, bindingTicket: `ticket-for-${loginCode}`, expiresInSeconds: 300 } })
+          options.success({ statusCode: 200, data: { token: `token-for-${loginCode}`, session: { expiresAt: '2026-09-15T00:00:00Z' }, user: { id: 'u1', phoneMasked: null, onboardingStatus: 'profile_required' }, consents: { termsVersion: '2026-09-10', privacyVersion: '2026-09-10', aiImageProcessingVersion: null, currentAiImageProcessingVersion: '2026-09-10' } } })
         }),
       },
     })
   })
 
   it('gets a fresh one-time wx.login code for every session attempt', async () => {
-    await expect(weChatLogin()).resolves.toMatchObject({ bindingTicket: 'ticket-for-login-1' })
-    await expect(weChatLogin()).resolves.toMatchObject({ bindingTicket: 'ticket-for-login-2' })
+    await expect(weChatLogin({ termsVersion: '2026-09-10', privacyVersion: '2026-09-10' })).resolves.toMatchObject({ token: 'token-for-login-1' })
+    await expect(weChatLogin({ termsVersion: '2026-09-10', privacyVersion: '2026-09-10' })).resolves.toMatchObject({ token: 'token-for-login-2' })
     expect(globalThis.wx.login).toHaveBeenCalledTimes(2)
-    expect(getSessionToken()).toBeNull()
+    expect(getSessionToken()).toBe('token-for-login-2')
   })
 
   it('stores a returned session token without logging it', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
     ;(globalThis.wx.request as any).mockImplementationOnce((options: Record<string, any>) => {
-      options.success({ statusCode: 200, data: { bindingRequired: false, token: 'secret-session-token', session: { expiresAt: '2026-09-15T00:00:00Z' }, user: { id: 'u1', phoneMasked: '138****5678', onboardingStatus: 'completed' }, consents: { termsVersion: '2026-09-10', privacyVersion: '2026-09-10', aiImageProcessingVersion: null, currentAiImageProcessingVersion: '2026-09-10' } } })
+      expect(options.data).toEqual({ loginCode: 'login-1', agreements: { termsVersion: '2026-09-10', privacyVersion: '2026-09-10' } })
+      options.success({ statusCode: 200, data: { token: 'secret-session-token', session: { expiresAt: '2026-09-15T00:00:00Z' }, user: { id: 'u1', phoneMasked: null, onboardingStatus: 'completed' }, consents: { termsVersion: '2026-09-10', privacyVersion: '2026-09-10', aiImageProcessingVersion: null, currentAiImageProcessingVersion: '2026-09-10' } } })
     })
 
-    await expect(weChatLogin()).resolves.toMatchObject({ bindingRequired: false })
+    await expect(weChatLogin({ termsVersion: '2026-09-10', privacyVersion: '2026-09-10' })).resolves.toMatchObject({ token: 'secret-session-token' })
     expect(getSessionToken()).toBe('secret-session-token')
     expect(log).not.toHaveBeenCalled()
   })

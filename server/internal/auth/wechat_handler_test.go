@@ -62,31 +62,38 @@ func TestWeChatSessionHandler(t *testing.T) {
 		}
 	})
 
-	t.Run("new identity receives ticket without creating account", func(t *testing.T) {
+	t.Run("new identity creates an account after current agreements are accepted", func(t *testing.T) {
 		service, _ := testService(t)
 		client := &fakeWeChatClient{identities: map[string]wechat.LoginIdentity{"login-code": {OpenID: "openid-new", SessionKey: "must-not-persist"}}}
-		response := performWeChatJSON(weChatTestRouter(service, client), http.MethodPost, "/v1/auth/wechat/sessions", `{"loginCode":"login-code"}`)
+		response := performWeChatJSON(weChatTestRouter(service, client), http.MethodPost, "/v1/auth/wechat/sessions", `{"loginCode":"login-code","agreements":{"termsVersion":"2026-09-10","privacyVersion":"2026-09-10"}}`)
 		if response.Code != http.StatusOK {
 			t.Fatalf("response = %d %s", response.Code, response.Body.String())
 		}
 		var body struct {
-			BindingRequired bool   `json:"bindingRequired"`
-			BindingTicket   string `json:"bindingTicket"`
-			ExpiresIn       int    `json:"expiresInSeconds"`
-			Token           string `json:"token"`
+			Token string   `json:"token"`
+			User  UserView `json:"user"`
 		}
 		if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
 			t.Fatal(err)
 		}
-		if !body.BindingRequired || body.BindingTicket == "" || body.ExpiresIn != 300 || body.Token != "" {
+		if body.Token == "" || body.User.ID == "" || body.User.PhoneMasked != nil || body.User.OnboardingStatus != "profile_required" {
 			t.Fatalf("body = %+v", body)
 		}
-		var users, sessions, tickets, leakedSessionKeys int
-		if err := service.store.pool.QueryRow(context.Background(), `select (select count(*) from users),(select count(*) from sessions),(select count(*) from wechat_binding_tickets),(select count(*) from wechat_binding_tickets where openid='must-not-persist' or union_id='must-not-persist')`).Scan(&users, &sessions, &tickets, &leakedSessionKeys); err != nil {
+		var users, identities, sessions, consents, leakedSessionKeys int
+		if err := service.store.pool.QueryRow(context.Background(), `select (select count(*) from users),(select count(*) from user_identities),(select count(*) from sessions),(select count(*) from user_consents),(select count(*) from user_identities where provider_subject='must-not-persist' or union_id='must-not-persist')`).Scan(&users, &identities, &sessions, &consents, &leakedSessionKeys); err != nil {
 			t.Fatal(err)
 		}
-		if users != 0 || sessions != 0 || tickets != 1 || leakedSessionKeys != 0 {
-			t.Fatalf("users = %d, sessions = %d, tickets = %d, leaked session keys = %d", users, sessions, tickets, leakedSessionKeys)
+		if users != 1 || identities != 1 || sessions != 1 || consents != 2 || leakedSessionKeys != 0 {
+			t.Fatalf("users=%d identities=%d sessions=%d consents=%d leaked=%d", users, identities, sessions, consents, leakedSessionKeys)
+		}
+	})
+
+	t.Run("new identity requires current agreements", func(t *testing.T) {
+		service, _ := testService(t)
+		client := &fakeWeChatClient{identities: map[string]wechat.LoginIdentity{"login-code": {OpenID: "openid-new"}}}
+		response := performWeChatJSON(weChatTestRouter(service, client), http.MethodPost, "/v1/auth/wechat/sessions", `{"loginCode":"login-code","agreements":{"termsVersion":"old","privacyVersion":"old"}}`)
+		if response.Code != http.StatusConflict || apiErrorCode(t, response) != "AGREEMENT_VERSION_OUTDATED" {
+			t.Fatalf("response=%d %s", response.Code, response.Body.String())
 		}
 	})
 
@@ -101,7 +108,6 @@ func TestWeChatSessionHandler(t *testing.T) {
 			t.Fatalf("response = %d, cookies = %+v, body = %s", response.Code, response.Result().Cookies(), response.Body.String())
 		}
 		var body struct {
-			BindingRequired bool         `json:"bindingRequired"`
 			Token           string       `json:"token"`
 			User            UserView     `json:"user"`
 			Session         SessionView  `json:"session"`
@@ -110,7 +116,7 @@ func TestWeChatSessionHandler(t *testing.T) {
 		if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
 			t.Fatal(err)
 		}
-		if body.BindingRequired || body.Token == "" || body.User.ID != seed.User.ID || strings.Count(response.Body.String(), `"token"`) != 1 {
+		if body.Token == "" || body.User.ID != seed.User.ID || strings.Count(response.Body.String(), `"token"`) != 1 {
 			t.Fatalf("body = %s", response.Body.String())
 		}
 		current, err := service.GetSession(context.Background(), body.Token)
@@ -243,19 +249,12 @@ func TestWeChatPhoneBindingCreatesOrLinksAccount(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			client := &fakeWeChatClient{
-				identities: map[string]wechat.LoginIdentity{"login-code": {OpenID: "openid-success", UnionID: "union-success", SessionKey: "session-key"}},
-				phones:     map[string]wechat.Phone{"phone-code": {Number: "+8613812345678"}},
-			}
+			client := &fakeWeChatClient{phones: map[string]wechat.Phone{"phone-code": {Number: "+8613812345678"}}}
 			router := weChatTestRouter(service, client)
-			sessionResponse := performWeChatJSON(router, http.MethodPost, "/v1/auth/wechat/sessions", `{"loginCode":"login-code"}`)
-			var sessionBody struct {
-				BindingTicket string `json:"bindingTicket"`
-			}
-			if err := json.Unmarshal(sessionResponse.Body.Bytes(), &sessionBody); err != nil || sessionBody.BindingTicket == "" {
-				t.Fatalf("session response = %d %s, err = %v", sessionResponse.Code, sessionResponse.Body.String(), err)
-			}
-			response := performWeChatJSON(router, http.MethodPost, "/v1/auth/wechat/phone-bindings", validWeChatBindingBody(sessionBody.BindingTicket, "phone-code"))
+			ticket := "direct-binding-ticket"
+			hash := sha256.Sum256([]byte(ticket))
+			if err := service.store.CreateWeChatBindingTicket(context.Background(), hash[:], "openid-success", "union-success", now, now.Add(5*time.Minute)); err != nil { t.Fatal(err) }
+			response := performWeChatJSON(router, http.MethodPost, "/v1/auth/wechat/phone-bindings", validWeChatBindingBody(ticket, "phone-code"))
 			if response.Code != http.StatusCreated || len(response.Result().Cookies()) != 0 || strings.Count(response.Body.String(), `"token"`) != 1 {
 				t.Fatalf("response = %d, cookies = %+v, body = %s", response.Code, response.Result().Cookies(), response.Body.String())
 			}

@@ -83,11 +83,12 @@ func (s *PostgresStore) ConsumeCodeAndCreateSession(ctx context.Context, input C
 	if err := tx.Commit(ctx); err != nil {
 		return SessionResult{}, err
 	}
-	return sessionResult(userID, input.Phone, expires, input.TermsVersion, input.PrivacyVersion, onboardingStatus(hasProfile, hasGoal)), nil
+	return sessionResult(userID, &input.Phone, expires, input.TermsVersion, input.PrivacyVersion, onboardingStatus(hasProfile, hasGoal)), nil
 }
 
 func (s *PostgresStore) Session(ctx context.Context, hash []byte, now time.Time) (SessionResult, error) {
-	var userID, phone, terms, privacy string
+	var userID, terms, privacy string
+	var phone *string
 	var expires time.Time
 	var hasProfile, hasGoal bool
 	err := s.pool.QueryRow(ctx, `select u.id,u.phone,s.expires_at,
@@ -132,7 +133,8 @@ func (s *PostgresStore) CreateSessionForWeChatIdentity(ctx context.Context, open
 	}
 	defer tx.Rollback(ctx)
 
-	var userID, phone, terms, privacy string
+	var userID, terms, privacy string
+	var phone *string
 	var hasProfile, hasGoal bool
 	err = tx.QueryRow(ctx, `select u.id,u.phone,
 		coalesce((select version from user_consents where user_id=u.id and kind='terms'),''),
@@ -155,6 +157,46 @@ func (s *PostgresStore) CreateSessionForWeChatIdentity(ctx context.Context, open
 		return SessionResult{}, false, err
 	}
 	return sessionResult(userID, phone, expires, terms, privacy, onboardingStatus(hasProfile, hasGoal)), true, nil
+}
+
+func (s *PostgresStore) CreateWeChatUserAndSession(ctx context.Context, openID, unionID, termsVersion, privacyVersion string, sessionHash []byte, now, expires time.Time) (SessionResult, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return SessionResult{}, err
+	}
+	defer tx.Rollback(ctx)
+	if _, err = tx.Exec(ctx, `select pg_advisory_xact_lock(hashtext($1))`, "wechat_miniprogram:"+openID); err != nil {
+		return SessionResult{}, err
+	}
+	var userID string
+	err = tx.QueryRow(ctx, `select i.user_id from user_identities i join users u on u.id=i.user_id where i.provider='wechat_miniprogram' and i.provider_subject=$1 and u.deleted_at is null`, openID).Scan(&userID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		userID = "user_" + randText()
+		if _, err = tx.Exec(ctx, `insert into users(id,phone) values($1,null)`, userID); err != nil {
+			return SessionResult{}, err
+		}
+		var nullableUnionID any
+		if unionID != "" {
+			nullableUnionID = unionID
+		}
+		if _, err = tx.Exec(ctx, `insert into user_identities(id,user_id,provider,provider_subject,union_id,created_at,updated_at) values($1,$2,'wechat_miniprogram',$3,$4,$5,$5)`, "identity_"+randText(), userID, openID, nullableUnionID, now); err != nil {
+			return SessionResult{}, err
+		}
+	} else if err != nil {
+		return SessionResult{}, err
+	}
+	for _, consent := range []struct{ kind, version string }{{"terms", termsVersion}, {"privacy", privacyVersion}} {
+		if _, err = tx.Exec(ctx, `insert into user_consents(user_id,kind,version,accepted_at) values($1,$2,$3,$4) on conflict(user_id,kind) do update set version=excluded.version,accepted_at=excluded.accepted_at`, userID, consent.kind, consent.version, now); err != nil {
+			return SessionResult{}, err
+		}
+	}
+	if _, err = tx.Exec(ctx, `insert into sessions(id,user_id,token_hash,expires_at,client_type) values($1,$2,$3,$4,$5)`, "session_"+randText(), userID, sessionHash, expires, ClientWeChatMiniProgram); err != nil {
+		return SessionResult{}, err
+	}
+	if err = tx.Commit(ctx); err != nil {
+		return SessionResult{}, err
+	}
+	return sessionResult(userID, nil, expires, termsVersion, privacyVersion, "profile_required"), nil
 }
 
 func (s *PostgresStore) BindWeChatPhoneAndCreateSession(ctx context.Context, ticketHash []byte, phone, termsVersion, privacyVersion string, sessionHash []byte, now, expires time.Time) (SessionResult, error) {
@@ -182,7 +224,8 @@ func (s *PostgresStore) BindWeChatPhoneAndCreateSession(ctx context.Context, tic
 		return SessionResult{}, &Error{Code: "WECHAT_BINDING_TICKET_EXPIRED", Message: "微信绑定凭证已过期", Status: http.StatusGone}
 	}
 
-	var identityUserID, identityPhone string
+	var identityUserID string
+	var identityPhone *string
 	identityErr := tx.QueryRow(ctx, `select i.user_id,u.phone from user_identities i join users u on u.id=i.user_id where i.provider='wechat_miniprogram' and i.provider_subject=$1 and u.deleted_at is null for update of i,u`, openID).Scan(&identityUserID, &identityPhone)
 	if identityErr != nil && !errors.Is(identityErr, pgx.ErrNoRows) {
 		return SessionResult{}, identityErr
@@ -198,12 +241,17 @@ func (s *PostgresStore) BindWeChatPhoneAndCreateSession(ctx context.Context, tic
 
 	var userID string
 	switch {
-	case identityExists && identityPhone != phone:
+	case identityExists && identityPhone != nil && *identityPhone != phone:
 		return SessionResult{}, identityConflict()
 	case identityExists && phoneExists && identityUserID != phoneUserID:
 		return SessionResult{}, identityConflict()
 	case identityExists:
 		userID = identityUserID
+		if identityPhone == nil {
+			if _, err := tx.Exec(ctx, `update users set phone=$2 where id=$1 and phone is null`, userID, phone); err != nil {
+				return SessionResult{}, err
+			}
+		}
 	case phoneExists:
 		userID = phoneUserID
 	default:
@@ -237,7 +285,7 @@ func (s *PostgresStore) BindWeChatPhoneAndCreateSession(ctx context.Context, tic
 	if err := tx.Commit(ctx); err != nil {
 		return SessionResult{}, err
 	}
-	return sessionResult(userID, phone, expires, termsVersion, privacyVersion, onboardingStatus(hasProfile, hasGoal)), nil
+	return sessionResult(userID, &phone, expires, termsVersion, privacyVersion, onboardingStatus(hasProfile, hasGoal)), nil
 }
 
 func invalidCode() error {
@@ -249,8 +297,13 @@ func identityConflict() error {
 }
 func randText() string { return rand.Text() }
 
-func sessionResult(id, phone string, expires time.Time, terms, privacy, status string) SessionResult {
-	return SessionResult{Session: SessionView{ExpiresAt: expires}, User: UserView{ID: id, PhoneMasked: phone[:3] + " " + phone[3:6] + "****" + phone[10:], OnboardingStatus: status}, Consents: ConsentsView{TermsVersion: terms, PrivacyVersion: privacy, CurrentAIImageProcessingVersion: CurrentAIImageProcessingVersion}}
+func sessionResult(id string, phone *string, expires time.Time, terms, privacy, status string) SessionResult {
+	var masked *string
+	if phone != nil {
+		value := (*phone)[:3] + " " + (*phone)[3:6] + "****" + (*phone)[10:]
+		masked = &value
+	}
+	return SessionResult{Session: SessionView{ExpiresAt: expires}, User: UserView{ID: id, PhoneMasked: masked, OnboardingStatus: status}, Consents: ConsentsView{TermsVersion: terms, PrivacyVersion: privacy, CurrentAIImageProcessingVersion: CurrentAIImageProcessingVersion}}
 }
 
 func onboardingStatus(hasProfile, hasGoal bool) string {

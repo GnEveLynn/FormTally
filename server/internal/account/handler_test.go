@@ -44,3 +44,17 @@ func TestHandlerBearerDeletionDoesNotSetCookie(t *testing.T) {
 		t.Fatalf("response=%d body=%s cookies=%+v", response.Code, response.Body.String(), response.Result().Cookies())
 	}
 }
+
+func TestHandlerRequiresBearerForWeChatDeletion(t *testing.T) {
+	store := &fakeStore{}
+	handler := NewHandler(NewService(store), func(*http.Request) (string, error) { return "user_1", nil })
+	router := httpapi.NewRouter(slog.New(slog.NewTextHandler(io.Discard, nil)), []string{"http://127.0.0.1:5173"}, handler.Register)
+	request := httptest.NewRequest(http.MethodPost, "/v1/account-deletions", bytes.NewBufferString(`{"loginCode":"fresh-code","confirmation":"DELETE"}`))
+	request.Header.Set("Origin", "http://127.0.0.1:5173")
+	request.AddCookie(&http.Cookie{Name: auth.SessionCookieName, Value: "cookie-token"})
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusUnauthorized || !strings.Contains(response.Body.String(), "BEARER_SESSION_REQUIRED") || store.called {
+		t.Fatalf("response=%d body=%s called=%v", response.Code, response.Body.String(), store.called)
+	}
+}

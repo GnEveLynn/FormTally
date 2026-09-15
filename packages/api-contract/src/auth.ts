@@ -12,7 +12,7 @@ export interface SessionResponse {
   session: { expiresAt: string }
   user: {
     id: string
-    phoneMasked: string
+    phoneMasked: string | null
     onboardingStatus: OnboardingStatus
   }
   consents: {
@@ -35,11 +35,10 @@ export interface LoginRequest {
 
 export interface WeChatSessionRequest {
   loginCode: string
+  agreements: { termsVersion: string; privacyVersion: string }
 }
 
-export type WeChatSessionResult =
-  | ({ bindingRequired: false; token: string } & SessionResponse)
-  | { bindingRequired: true; bindingTicket: string; expiresInSeconds: 300 }
+export type WeChatSessionResult = { token: string } & SessionResponse
 
 export interface WeChatPhoneBindingRequest {
   bindingTicket: string

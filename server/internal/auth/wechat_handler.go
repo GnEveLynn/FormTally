@@ -8,29 +8,24 @@ import (
 
 func (h *Handler) createWeChatSession(w http.ResponseWriter, r *http.Request) {
 	var request struct {
-		LoginCode string `json:"loginCode"`
+		LoginCode  string `json:"loginCode"`
+		Agreements struct {
+			TermsVersion   string `json:"termsVersion"`
+			PrivacyVersion string `json:"privacyVersion"`
+		} `json:"agreements"`
 	}
 	if !decodeJSON(w, r, &request) {
 		return
 	}
-	result, err := h.service.CreateWeChatSession(r.Context(), WeChatSessionInput{LoginCode: request.LoginCode})
+	result, err := h.service.CreateWeChatSession(r.Context(), WeChatSessionInput{LoginCode: request.LoginCode, TermsVersion: request.Agreements.TermsVersion, PrivacyVersion: request.Agreements.PrivacyVersion})
 	if err != nil {
 		writeServiceError(w, r, err)
 		return
 	}
-	if result.BindingRequired {
-		httpapi.WriteJSON(w, http.StatusOK, struct {
-			BindingRequired bool   `json:"bindingRequired"`
-			BindingTicket   string `json:"bindingTicket"`
-			ExpiresIn       int    `json:"expiresInSeconds"`
-		}{true, result.BindingTicket, result.ExpiresInSeconds})
-		return
-	}
 	httpapi.WriteJSON(w, http.StatusOK, struct {
-		BindingRequired bool   `json:"bindingRequired"`
-		Token           string `json:"token"`
+		Token string `json:"token"`
 		SessionResult
-	}{false, result.Token, result.Session})
+	}{result.Token, result.Session})
 }
 
 func (h *Handler) createWeChatPhoneBinding(w http.ResponseWriter, r *http.Request) {

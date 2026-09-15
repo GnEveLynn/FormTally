@@ -47,4 +47,14 @@ describe('mini-program account store', () => {
     expect(deleteAccount).toHaveBeenCalledWith({ code: '123456', verificationRequestId: 'vr_1', confirmation: 'DELETE' })
     expect(clear).toHaveBeenCalledOnce()
   })
+
+  it('uses a fresh WeChat login code when deleting an account without a phone', async () => {
+    Object.assign(globalThis, { wx: { login: ({ success }: Record<string, any>) => success({ code: 'fresh-login-code' }) } })
+    const deleteAccount = vi.fn().mockResolvedValue({ accountDeletion: { status: 'accepted' } })
+    const clear = vi.fn()
+    const store = createAccountStore({ saveProfile: vi.fn(), saveGoal: vi.fn(), logout: vi.fn(), requestDeleteCode: vi.fn(), deleteAccount }, clear)
+    expect(await store.deleteWeChatAccount('DELETE')).toBe(true)
+    expect(deleteAccount).toHaveBeenCalledWith({ loginCode: 'fresh-login-code', confirmation: 'DELETE' })
+    expect(clear).toHaveBeenCalledOnce()
+  })
 })

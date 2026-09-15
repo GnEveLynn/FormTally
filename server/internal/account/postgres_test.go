@@ -93,6 +93,26 @@ func TestDeleteConsumesOwnedCodeRevokesDataAndQueuesImages(t *testing.T) {
 	}
 }
 
+func TestDeleteWithWeChatIdentityRejectsAnotherUserAndDeletesOwner(t *testing.T) {
+	pool := accountTestPool(t)
+	ctx := context.Background()
+	now := time.Date(2026, 9, 15, 1, 0, 0, 0, time.UTC)
+	if _, err := pool.Exec(ctx, `insert into users(id,phone) values('wx-owner',null),('wx-other',null); insert into user_identities(id,user_id,provider,provider_subject) values('wx-id','wx-owner','wechat_miniprogram','openid-owner')`); err != nil {
+		t.Fatal(err)
+	}
+	store := NewPostgresStore(pool)
+	if _, err := store.DeleteWithWeChatIdentity(ctx, "wx-other", "openid-owner", now); !errors.Is(err, ErrWeChatIdentityMismatch) {
+		t.Fatalf("cross-user err=%v", err)
+	}
+	if _, err := store.DeleteWithWeChatIdentity(ctx, "wx-owner", "openid-owner", now); err != nil {
+		t.Fatal(err)
+	}
+	var count int
+	if err := pool.QueryRow(ctx, `select count(*) from users where id='wx-owner'`).Scan(&count); err != nil || count != 0 {
+		t.Fatalf("count=%d err=%v", count, err)
+	}
+}
+
 func accountTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	base := os.Getenv("TEST_DATABASE_URL")

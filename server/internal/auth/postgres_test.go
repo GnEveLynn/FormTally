@@ -43,7 +43,7 @@ func TestVerificationAndSessionLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if token == "" || created.User.OnboardingStatus != "profile_required" || created.User.PhoneMasked != "+86 138****5678" {
+	if token == "" || created.User.OnboardingStatus != "profile_required" || created.User.PhoneMasked == nil || *created.User.PhoneMasked != "+86 138****5678" {
 		t.Fatalf("created session = %+v, token empty = %v", created, token == "")
 	}
 	if _, _, err := service.CreateSession(ctx, CreateSessionInput{Phone: phone, Code: code, VerificationRequestID: verification.RequestID, TermsVersion: CurrentTermsVersion, PrivacyVersion: CurrentPrivacyVersion}); ErrorCode(err) != "VERIFICATION_CODE_INVALID" {
@@ -110,6 +110,40 @@ func TestWeChatMigrationConstraintsAndCascades(t *testing.T) {
 	}
 	if identities != 0 || tickets != 0 {
 		t.Fatalf("cascade counts = identities %d, tickets %d", identities, tickets)
+	}
+}
+
+func TestWeChatIdentityCreationIsConcurrentAndAtomic(t *testing.T) {
+	service, _ := testService(t)
+	now := time.Date(2026, 9, 14, 8, 0, 0, 0, time.UTC)
+	start := make(chan struct{})
+	results := make([]SessionResult, 2)
+	errs := make([]error, 2)
+	var wait sync.WaitGroup
+	for index := range results {
+		wait.Add(1)
+		go func() {
+			defer wait.Done()
+			<-start
+			results[index], errs[index] = service.store.CreateWeChatUserAndSession(context.Background(), "openid-concurrent", "union-concurrent", CurrentTermsVersion, CurrentPrivacyVersion, []byte{byte(index + 20)}, now, now.Add(time.Hour))
+		}()
+	}
+	close(start)
+	wait.Wait()
+	for _, err := range errs {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if results[0].User.ID != results[1].User.ID {
+		t.Fatalf("different users: %+v", results)
+	}
+	var users, identities, sessions int
+	if err := service.store.pool.QueryRow(context.Background(), `select (select count(*) from users),(select count(*) from user_identities where provider_subject='openid-concurrent'),(select count(*) from sessions where user_id=$1)`, results[0].User.ID).Scan(&users, &identities, &sessions); err != nil {
+		t.Fatal(err)
+	}
+	if users != 1 || identities != 1 || sessions != 2 {
+		t.Fatalf("users=%d identities=%d sessions=%d", users, identities, sessions)
 	}
 }
 
@@ -208,7 +242,7 @@ func TestWeChatBindingMergesAccountsWithoutSilentConflict(t *testing.T) {
 		service, _ := testService(t)
 		now := time.Date(2026, 9, 14, 8, 0, 0, 0, time.UTC)
 		result := bindWeChatForTest(t, service.store, "ticket-new", "openid-new", "+8613912345678", now)
-		if result.User.ID == "" || result.User.PhoneMasked != "+86 139****5678" {
+		if result.User.ID == "" || result.User.PhoneMasked == nil || *result.User.PhoneMasked != "+86 139****5678" {
 			t.Fatalf("result = %+v", result)
 		}
 	})

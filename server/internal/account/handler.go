@@ -34,6 +34,13 @@ func (h *Handler) delete(w http.ResponseWriter, r *http.Request) {
 		httpapi.WriteError(w, r, http.StatusBadRequest, "INVALID_REQUEST", "请求格式无效")
 		return
 	}
+	if input.LoginCode != "" {
+		credential, credentialErr := auth.SessionCredential(r)
+		if credentialErr != nil || credential.Kind != auth.CredentialBearer {
+			httpapi.WriteError(w, r, http.StatusUnauthorized, "BEARER_SESSION_REQUIRED", "请使用小程序会话重新验证")
+			return
+		}
+	}
 	deletion, err := h.service.Delete(r.Context(), userID, input)
 	if err != nil {
 		code, name, message := status(err)
