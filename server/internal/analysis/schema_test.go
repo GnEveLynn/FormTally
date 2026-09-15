@@ -33,6 +33,19 @@ func TestParseResultRejectsUntrustedModelOutput(t *testing.T) {
 	}
 }
 
+func TestParseResultRejectsUserFacingTextWithoutChinese(t *testing.T) {
+	cases := []string{
+		`{"items":[{"name":"Fried Chicken Burger","grams":280,"energyKcal":650,"proteinGrams":28,"carbGrams":45,"fatGrams":32,"confidence":"high","assumption":null}],"incomplete":false,"warning":null}`,
+		`{"items":[{"name":"炸鸡汉堡","grams":280,"energyKcal":650,"proteinGrams":28,"carbGrams":45,"fatGrams":32,"confidence":"low","assumption":"Typical serving"}],"incomplete":false,"warning":null}`,
+		`{"items":[{"name":"炸鸡汉堡","grams":280,"energyKcal":650,"proteinGrams":28,"carbGrams":45,"fatGrams":32,"confidence":"high","assumption":null}],"incomplete":true,"warning":"Image is blurry"}`,
+	}
+	for _, input := range cases {
+		if _, err := ParseResult(strings.NewReader(input)); err == nil {
+			t.Fatalf("model output without Chinese accepted: %s", input)
+		}
+	}
+}
+
 func TestResultSchemaIsStrictAtEveryObjectLevel(t *testing.T) {
 	schema := ResultJSONSchema()
 	if schema["additionalProperties"] != false {

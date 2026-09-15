@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 )
 
@@ -58,17 +59,24 @@ func validateResult(result Result) error {
 		if name == "" || utf8.RuneCountInString(name) > 60 || item.Grams < .1 || item.Grams > 10000 || item.EnergyKcal < 0 || item.EnergyKcal > 10000 || item.ProteinGrams < 0 || item.ProteinGrams > 1000 || item.CarbGrams < 0 || item.CarbGrams > 1000 || item.FatGrams < 0 || item.FatGrams > 1000 {
 			return fmt.Errorf("model item %d is outside supported ranges", index)
 		}
+		if !containsHan(name) {
+			return fmt.Errorf("model item %d name must contain Chinese", index)
+		}
 		if item.Confidence != "high" && item.Confidence != "medium" && item.Confidence != "low" {
 			return fmt.Errorf("model item %d has invalid confidence", index)
 		}
-		if item.Assumption != nil && utf8.RuneCountInString(*item.Assumption) > 200 {
-			return fmt.Errorf("model item %d assumption is too long", index)
+		if item.Assumption != nil && (utf8.RuneCountInString(*item.Assumption) > 200 || !containsHan(*item.Assumption)) {
+			return fmt.Errorf("model item %d assumption must be Chinese and at most 200 characters", index)
 		}
 	}
-	if result.Warning != nil && utf8.RuneCountInString(*result.Warning) > 200 {
-		return fmt.Errorf("model warning is too long")
+	if result.Warning != nil && (utf8.RuneCountInString(*result.Warning) > 200 || !containsHan(*result.Warning)) {
+		return fmt.Errorf("model warning must be Chinese and at most 200 characters")
 	}
 	return nil
+}
+
+func containsHan(value string) bool {
+	return strings.ContainsFunc(value, func(r rune) bool { return unicode.Is(unicode.Han, r) })
 }
 
 func ResultJSONSchema() map[string]any {

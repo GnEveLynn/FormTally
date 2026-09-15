@@ -11,7 +11,7 @@ const item = (name: string, confidence: MealItem['confidence'], assumption: stri
 describe('meal confirmation presentation', () => {
   it('keeps the AI estimate warning, server warnings, and low-confidence assumptions visible', () => {
     const view = reviewModel([item('米饭', 'high', null), item('汤', 'low', '可能含有食用油')], ['图片部分遮挡'])
-    expect(view.estimateNotice).toContain('估算')
+    expect(view.estimateNotice).toBe('图片识别和营养数据均为估算，请按实际情况修改。')
     expect(view.warnings).toEqual(['图片部分遮挡'])
     expect(view.lowConfidence).toEqual([{ index: 1, name: '汤', assumption: '可能含有食用油' }])
     expect(view.totals).toEqual({ energyKcal: 200, proteinGrams: 4.4, carbGrams: 6.6, fatGrams: 8.8 })

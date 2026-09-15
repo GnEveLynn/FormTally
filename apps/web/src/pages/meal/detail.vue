@@ -45,7 +45,7 @@ onMounted(load)
     <p v-if="status==='loading'" role="status">正在加载餐食…</p>
     <p v-else-if="status==='error'" role="alert">{{ error }}</p>
     <template v-else-if="meal">
-      <header><div><p>{{ meal.localDate }} · {{ mealLabels[meal.mealType] }}</p><h1>{{ meal.totals.energyKcal }} 千卡</h1></div><RouterLink class="edit" :to="`/meals/${meal.id}/edit`">编辑</RouterLink></header>
+      <header><div><p>{{ meal.localDate }} · {{ mealLabels[meal.mealType] ?? '未知餐别' }}</p><h1>{{ meal.totals.energyKcal }} 千卡</h1></div><RouterLink class="edit" :to="`/meals/${meal.id}/edit`">编辑</RouterLink></header>
       <img v-if="meal.image" :src="meal.image.url" alt="餐食图片">
       <p class="notice">估算值：{{ meal.estimateNotice }}</p>
       <section><article v-for="item in meal.items" :key="item.id ?? item.name"><h2>{{ item.name }}</h2><p>{{ item.grams }} 克 · {{ item.nutrition.energyKcal }} 千卡</p><small>蛋白质 {{ item.nutrition.proteinGrams }}g · 碳水 {{ item.nutrition.carbGrams }}g · 脂肪 {{ item.nutrition.fatGrams }}g</small></article></section>

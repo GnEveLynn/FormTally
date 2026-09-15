@@ -57,7 +57,7 @@ func TestOpenAIAnalyzerUsesChatCompletionsForQwenStructuredOutput(t *testing.T) 
 	if len(result.Items) != 1 || meta.ResponseStatus != "stop" {
 		t.Fatalf("result=%+v meta=%+v", result, meta)
 	}
-	for _, required := range []string{"data:image/jpeg;base64,AQID", `"type":"json_schema"`, PromptVersion, "小数点必须使用英文句点", `"store":false`, `"enable_thinking":false`} {
+	for _, required := range []string{"data:image/jpeg;base64,AQID", `"type":"json_schema"`, PromptVersion, "所有面向用户的文本必须使用简体中文", `"store":false`, `"enable_thinking":false`} {
 		if !bytes.Contains([]byte(requestBody), []byte(required)) {
 			t.Fatalf("request missing %q: %s", required, requestBody)
 		}

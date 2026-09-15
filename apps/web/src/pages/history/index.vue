@@ -38,7 +38,7 @@ onMounted(async () => {
       <section v-if="historyStore.state.dayStatus === 'empty'" class="state"><h2>这天没有记录</h2><p>查看其他日期，或回到今天记录一餐。</p></section>
       <section v-else class="groups">
         <article v-for="group in historyStore.state.day.mealGroups" :key="group.mealType">
-          <h2>{{ mealLabels[group.mealType] ?? group.mealType }}</h2>
+          <h2>{{ mealLabels[group.mealType] ?? '未知餐别' }}</h2>
           <RouterLink v-for="meal in group.meals" :key="meal.id" class="meal" :to="`/meals/${meal.id}`"><span>{{ time(meal.occurredAt) }}</span><strong>{{ meal.totals.energyKcal }} 千卡</strong><small>蛋白质 {{ meal.totals.proteinGrams }}g · 碳水 {{ meal.totals.carbGrams }}g · 脂肪 {{ meal.totals.fatGrams }}g</small></RouterLink>
         </article>
       </section>

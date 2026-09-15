@@ -10,6 +10,7 @@ describe('ImagePicker', () => {
     expect(input.attributes('accept')).toBe('image/jpeg,image/png,image/webp')
     expect(input.attributes('capture')).toBe('environment')
     expect(wrapper.text()).toContain('2026-09-11T12:00')
-    expect(wrapper.text()).toContain('lunch')
+    expect(wrapper.text()).toContain('午餐')
+    expect(wrapper.text()).not.toContain('lunch')
   })
 })
