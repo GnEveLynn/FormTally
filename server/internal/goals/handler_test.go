@@ -21,7 +21,7 @@ func TestGoalsHandlersPreviewSaveAndGet(t *testing.T) {
 	request := httptest.NewRequest(http.MethodPost, "/v1/goal-previews", bytes.NewBufferString(body))
 	response := httptest.NewRecorder()
 	mux.ServeHTTP(response, request)
-	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"energyKcal":2220`) {
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"energyKcal":1970`) {
 		t.Fatalf("preview status/body = %d %s", response.Code, response.Body.String())
 	}
 

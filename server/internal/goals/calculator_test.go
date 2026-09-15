@@ -55,6 +55,36 @@ func TestCalculateFixedExample(t *testing.T) {
 	}
 }
 
+func TestCalculateV2UsesLowerActivityMultipliers(t *testing.T) {
+	tests := []struct {
+		activity   ActivityLevel
+		multiplier float64
+		energy     int
+	}{
+		{ActivitySedentary, 1.1, 1860},
+		{ActivityLight, 1.2, 2030},
+		{ActivityModerate, 1.375, 2320},
+		{ActivityHigh, 1.55, 2620},
+		{ActivityVeryHigh, 1.725, 2910},
+	}
+	for _, tt := range tests {
+		input := fixedInput()
+		input.ActivityLevel = tt.activity
+		input.Objective = ObjectiveMaintain
+		input.Pace = PaceNone
+		result, err := CalculateV2(input)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.Calculation.Inputs.ActivityMultiplier != tt.multiplier || result.Target.EnergyKcal != tt.energy {
+			t.Fatalf("activity %q = multiplier %v, energy %d", tt.activity, result.Calculation.Inputs.ActivityMultiplier, result.Target.EnergyKcal)
+		}
+		if result.Calculation.CalculationVersion != CalculationVersionV2 {
+			t.Fatalf("calculation version = %q", result.Calculation.CalculationVersion)
+		}
+	}
+}
+
 func TestCalculateVariants(t *testing.T) {
 	tests := []struct {
 		name      string

@@ -32,7 +32,7 @@ func EvaluateEligibility(input CalculationInput) EligibilityResult {
 	if input.BiologicalSex != SexMale && input.BiologicalSex != SexFemale {
 		result.Reasons = append(result.Reasons, ReasonInvalidBiologicalSex)
 	}
-	if _, ok := activityMultipliers[input.ActivityLevel]; !ok {
+	if _, ok := activityMultipliersV2[input.ActivityLevel]; !ok {
 		result.Reasons = append(result.Reasons, ReasonInvalidActivityLevel)
 	}
 	if err == nil && birthErr == nil && !input.At.IsZero() {

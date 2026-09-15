@@ -1,6 +1,6 @@
 package goals
 
-var activityMultipliers = map[ActivityLevel]float64{
+var activityMultipliersV1 = map[ActivityLevel]float64{
 	// These factors represent total daily activity relative to resting energy,
 	// from little exercise through intense training plus physical work.
 	ActivitySedentary: 1.2,
@@ -8,6 +8,14 @@ var activityMultipliers = map[ActivityLevel]float64{
 	ActivityModerate:  1.55,
 	ActivityHigh:      1.725,
 	ActivityVeryHigh:  1.9,
+}
+
+var activityMultipliersV2 = map[ActivityLevel]float64{
+	ActivitySedentary: 1.1,
+	ActivityLight:     1.2,
+	ActivityModerate:  1.375,
+	ActivityHigh:      1.55,
+	ActivityVeryHigh:  1.725,
 }
 
 var goalAdjustments = map[Objective]map[Pace]float64{
@@ -27,6 +35,14 @@ var goalAdjustments = map[Objective]map[Pace]float64{
 // goal policy, macro split, or rounding rule must create a new version rather
 // than altering this function's historical results.
 func CalculateV1(input CalculationInput) (CalculationResult, error) {
+	return calculate(input, activityMultipliersV1, CalculationVersionV1)
+}
+
+func CalculateV2(input CalculationInput) (CalculationResult, error) {
+	return calculate(input, activityMultipliersV2, CalculationVersionV2)
+}
+
+func calculate(input CalculationInput, activityMultipliers map[ActivityLevel]float64, calculationVersion string) (CalculationResult, error) {
 	eligibility := EvaluateEligibility(input)
 	if !eligibility.Eligible {
 		return CalculationResult{}, ErrAutomaticGoalNotEligible
@@ -70,7 +86,7 @@ func CalculateV1(input CalculationInput) (CalculationResult, error) {
 		ObjectiveMuscleGain: "应用增肌目标后的热量",
 	}[input.Objective]
 	calculation := GoalCalculation{
-		CalculationVersion: CalculationVersionV1,
+		CalculationVersion: calculationVersion,
 		Method: MethodDescription{
 			ID:                EnergyMethodV1,
 			DisplayName:       "Mifflin–St Jeor 静息能量估算",

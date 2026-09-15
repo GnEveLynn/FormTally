@@ -111,7 +111,7 @@ func calculateSettings(profile ProfileRecord, input SettingsInput, now time.Time
 		if input.Automatic == nil || input.Manual != nil {
 			return EffectiveTarget{}, ErrInvalidGoal
 		}
-		result, err := CalculateV1(CalculationInput{
+		result, err := CalculateV2(CalculationInput{
 			BiologicalSex: profile.BiologicalSex, BirthDate: profile.BirthDate,
 			HeightCm: profile.HeightCm, WeightKg: profile.WeightKg,
 			ActivityLevel: profile.ActivityLevel, Timezone: profile.Timezone,

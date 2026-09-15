@@ -7,6 +7,7 @@ import (
 
 const (
 	CalculationVersionV1 = "daily_nutrition_target_v1"
+	CalculationVersionV2 = "daily_nutrition_target_v2"
 	EnergyMethodV1       = "mifflin_st_jeor_v1"
 	MacroMethodV1        = "macro_split_50_25_25_v1"
 )

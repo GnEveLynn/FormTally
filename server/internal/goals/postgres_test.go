@@ -26,7 +26,7 @@ func TestGoalPreviewHasNoSideEffectsAndFirstSaveStartsToday(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if preview.EffectiveFrom != "2026-09-11" || preview.Target.EnergyKcal != 2220 {
+	if preview.EffectiveFrom != "2026-09-11" || preview.Target.EnergyKcal != 1970 {
 		t.Fatalf("preview = %+v", preview)
 	}
 	for _, table := range []string{"goal_settings", "daily_targets"} {
@@ -47,7 +47,7 @@ func TestGoalPreviewHasNoSideEffectsAndFirstSaveStartsToday(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if view.ActiveTarget == nil || view.ActiveTarget.Target.EnergyKcal != 2220 || view.PendingTarget != nil {
+	if view.ActiveTarget == nil || view.ActiveTarget.Target.EnergyKcal != 1970 || view.PendingTarget != nil {
 		t.Fatalf("goals view = %+v", view)
 	}
 }
@@ -66,14 +66,14 @@ func TestGoalUpdateStartsTomorrowAndKeepsActiveSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if updated.Settings.Revision != 2 || updated.EffectiveTarget.EffectiveFrom != "2026-09-12" || updated.EffectiveTarget.Target.EnergyKcal != 2090 {
+	if updated.Settings.Revision != 2 || updated.EffectiveTarget.EffectiveFrom != "2026-09-12" || updated.EffectiveTarget.Target.EnergyKcal != 1860 {
 		t.Fatalf("updated = %+v", updated)
 	}
 	view, err := service.Get(ctx, "user_goal_update")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if view.ActiveTarget.Target.EnergyKcal != 2220 || view.PendingTarget.Target.EnergyKcal != 2090 {
+	if view.ActiveTarget.Target.EnergyKcal != 1970 || view.PendingTarget.Target.EnergyKcal != 1860 {
 		t.Fatalf("view = %+v", view)
 	}
 	if _, err := service.Save(ctx, "user_goal_update", automaticInput(ObjectiveFatLoss, PaceSlow, &revision)); !errors.Is(err, ErrRevisionConflict) {
@@ -113,7 +113,7 @@ func TestPastTargetIsCopiedOnceAndRemainsStable(t *testing.T) {
 		t.Fatal(err)
 	}
 	past, err := service.EnsureDailyTarget(ctx, "user_past", "2026-09-01")
-	if err != nil || past.Target.EnergyKcal != 2220 {
+	if err != nil || past.Target.EnergyKcal != 1970 {
 		t.Fatalf("past target = %+v, %v", past, err)
 	}
 	revision := 1
