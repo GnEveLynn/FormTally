@@ -31,6 +31,23 @@ describe('WeChat auth platform boundary', () => {
     expect(getSessionToken()).toBe('token-for-login-2')
   })
 
+  it('identifies wx.login failures before sending a backend request', async () => {
+    ;(globalThis.wx.login as any).mockImplementationOnce(({ fail }: Record<string, any>) => fail({ errMsg: 'login:fail system error' }))
+
+    await expect(weChatLogin({ termsVersion: '2026-09-10', privacyVersion: '2026-09-10' }))
+      .rejects.toThrow('wx.login 失败：login:fail system error')
+    expect(globalThis.wx.request).not.toHaveBeenCalled()
+  })
+
+  it('identifies wx.request failures after wx.login succeeds', async () => {
+    ;(globalThis.wx.request as any).mockImplementationOnce(({ fail }: Record<string, any>) => fail({ errMsg: 'request:fail timeout' }))
+
+    await expect(weChatLogin({ termsVersion: '2026-09-10', privacyVersion: '2026-09-10' }))
+      .rejects.toThrow('wx.request 失败：request:fail timeout')
+    expect(globalThis.wx.login).toHaveBeenCalledOnce()
+    expect(globalThis.wx.request).toHaveBeenCalledOnce()
+  })
+
   it('stores a returned session token without logging it', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined)
     ;(globalThis.wx.request as any).mockImplementationOnce((options: Record<string, any>) => {

@@ -16,7 +16,7 @@ export class ApiError extends Error {
 }
 
 export class NetworkError extends Error {
-  constructor(message = '网络连接失败，请重试') {
+  constructor(message = '网络连接失败，请重试', readonly nativeMessage = '') {
     super(message)
     this.name = 'NetworkError'
   }
@@ -86,8 +86,8 @@ export function request<T>(path: string, options: RequestOptions = {}): Promise<
         }
         reject(error)
       },
-      fail() {
-        reject(new NetworkError())
+      fail({ errMsg }) {
+        reject(new NetworkError(undefined, errMsg))
       },
     })
   })

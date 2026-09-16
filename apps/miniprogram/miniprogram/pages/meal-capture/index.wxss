@@ -12,6 +12,7 @@
 .secondary { border: 2rpx solid #cbd5d1; background: #fff; color: var(--ft-color-text); }
 .notice { display: grid; gap: 20rpx; margin-top: 32rpx; padding: 28rpx; border-radius: 28rpx; background: #eef7f3; line-height: 1.6; }
 .notice-title { font-size: 34rpx; font-weight: 700; }
+.notice-link { color: #178958; text-decoration: underline; }
 .link { border: 0; background: transparent; color: #a22b2b; }
 .manual, .error { margin-top: 24rpx; }
 .error { color: #a22b2b; }

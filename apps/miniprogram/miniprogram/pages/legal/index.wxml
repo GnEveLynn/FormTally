@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="title">{{title}}</view>
+  <view class="version">版本 {{version}}</view>
+  <view wx:for="{{sections}}" wx:key="heading" class="section">
+    <view class="heading">{{item.heading}}</view>
+    <view class="body">{{item.body}}</view>
+  </view>
+  <view class="footer">有关个人信息处理及运营者联系方式，<text class="link" bindtap="openPrivacyContract">查看隐私保护指引</text>。</view>
+</view>

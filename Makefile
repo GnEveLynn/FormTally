@@ -50,7 +50,7 @@ build-miniprogram:
 	npm run build:miniprogram
 
 scan-miniprogram: build-miniprogram
-	@test -z "$$(find apps/miniprogram/miniprogram -type f \( -name '.env*' -o -name '*.pem' -o -name '*.key' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.webp' \) -print)"
+	@test -z "$$(find apps/miniprogram/miniprogram -type f \( -name '.env*' -o -name '*.pem' -o -name '*.key' -o -name '*.jpg' -o -name '*.jpeg' -o -name '*.png' -o -name '*.webp' \) ! -path 'apps/miniprogram/miniprogram/assets/brand/canjian-avatar.png' -print)"
 	@if grep -RIlE 'WECHAT_APP_SECRET|sk-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|Bearer[[:space:]]+[A-Za-z0-9_-]{20,}|1[3-9][0-9]{9}' apps/miniprogram/miniprogram --exclude='*.spec.ts'; then exit 1; fi
 
 ai-eval:

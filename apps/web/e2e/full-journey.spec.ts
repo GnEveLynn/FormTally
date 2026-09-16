@@ -83,11 +83,11 @@ test('今日页在一秒后保持 loading、三秒内展示数据并提供文字
   await expect(page.getByText('已超出', { exact: false }).first()).toBeVisible({ timeout: 3000 })
   expect(Date.now() - started).toBeLessThan(3000)
   await page.addStyleTag({ content: ':root { font-size: 200% !important; }' })
-  await expect(page.getByRole('link', { name: '＋ 记录一餐' })).toBeVisible()
-  for (const name of ['＋ 记录一餐', '退出登录']) {
-    const box = await page.getByRole(name === '退出登录' ? 'button' : 'link', { name }).boundingBox()
-    expect(box?.height).toBeGreaterThanOrEqual(44)
-  }
+  const record = page.getByRole('button', { name: '▣ 记录饮食' })
+  await expect(record).toBeVisible()
+  expect((await record.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+  await page.goto('/me')
+  expect((await page.getByRole('button', { name: '退出登录' }).boundingBox())?.height).toBeGreaterThanOrEqual(44)
 })
 
 test('AI 超过十二秒仍显示处理中反馈', async ({ page }) => {

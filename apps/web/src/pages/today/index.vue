@@ -17,6 +17,7 @@ const tabs = [{ key: 'yesterday', label: '昨日', date: shiftedDate(-1) }, { ke
 const mealTypes = [{ value: 'breakfast', label: '早餐', icon: '☀' }, { value: 'lunch', label: '午餐', icon: '♨' }, { value: 'dinner', label: '晚餐', icon: '☾' }, { value: 'snack', label: '加餐', icon: '♡' }]
 const day = computed(() => todayStore.state.day)
 const energy = computed(() => day.value?.progress?.energy)
+const energyDifference = computed(() => energy.value?.overBy ? { label: '已超出', value: energy.value.overBy } : { label: '还可摄入', value: energy.value?.remaining ?? 0 })
 const ringStyle = computed(() => ({ '--progress': `${Math.min(energy.value?.percent ?? 0, 100) * 3.6}deg` }))
 const mealGroup = (type: string) => day.value?.mealGroups.find(group => group.mealType === type)
 const time = (value: string) => new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(new Date(value))
@@ -32,10 +33,10 @@ onMounted(() => todayStore.load(selectedDate.value))
   <main class="today">
     <header><div><h1>FormTally</h1><p>饮食记录</p></div><span class="calendar">▣</span></header>
     <nav class="date-tabs" aria-label="日期切换"><button v-for="tab in tabs" :key="tab.key" :data-test="`date-${tab.key}`" :class="{ active: selectedDate === tab.date }" @click="selectDate(tab.date)"><strong>{{ tab.label }}</strong><span>{{ displayDate(tab.date) }}</span></button></nav>
-    <p v-if="todayStore.state.status === 'loading'" class="notice">正在加载记录…</p>
+    <p v-if="todayStore.state.status === 'loading'" class="notice" role="status">正在加载记录…</p>
     <p v-else-if="todayStore.state.status === 'error'" class="notice error" role="alert">{{ todayStore.state.error }}</p>
     <template v-else-if="day">
-      <section v-if="day.progress" class="summary-card"><div class="ring" :style="ringStyle"><div><strong>{{ day.progress.energy.consumed.toLocaleString() }}</strong><span>/ {{ day.progress.energy.target.toLocaleString() }}</span><small>千卡</small></div></div><div class="remaining"><span>还可摄入</span><strong>{{ day.progress.energy.remaining.toLocaleString() }} <small>千卡</small></strong><p>保持均衡饮食，遇见更好的自己。</p></div></section>
+      <section v-if="day.progress" class="summary-card"><div class="ring" :style="ringStyle"><div><strong>{{ day.progress.energy.consumed.toLocaleString() }}</strong><span>/ {{ day.progress.energy.target.toLocaleString() }}</span><small>千卡</small></div></div><div class="remaining"><span>{{ energyDifference.label }}</span><strong>{{ energyDifference.value.toLocaleString() }} <small>千卡</small></strong><p>保持均衡饮食，遇见更好的自己。</p></div></section>
       <section v-if="day.progress" class="nutrients"><article><span class="protein">◉</span><strong>蛋白质</strong><b>{{ day.progress.protein.consumed }} <small>/ {{ day.progress.protein.target }}g</small></b></article><article><span class="carbs">♨</span><strong>碳水</strong><b>{{ day.progress.carb.consumed }} <small>/ {{ day.progress.carb.target }}g</small></b></article><article><span class="fat">◯</span><strong>脂肪</strong><b>{{ day.progress.fat.consumed }} <small>/ {{ day.progress.fat.target }}g</small></b></article></section>
       <section class="meal-grid"><article v-for="type in mealTypes" :key="type.value" class="meal-card" @click="openRecord(type.value)"><header><span :class="type.value">{{ type.icon }}</span><strong>{{ type.label }}</strong><b>›</b></header><template v-if="mealGroup(type.value)?.meals.length"><a v-for="meal in mealGroup(type.value)?.meals" :key="meal.id" :href="`/meals/${meal.id}`" @click.stop><span>{{ time(meal.occurredAt) }}</span><strong>{{ meal.totals.energyKcal }} 千卡</strong></a></template><p v-else>还没有记录<br>快去记录吧～</p></article></section>
       <p v-if="todayStore.state.status === 'empty'" class="empty-title">今天还没有记录</p>

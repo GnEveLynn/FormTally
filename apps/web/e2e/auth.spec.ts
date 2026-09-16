@@ -38,7 +38,8 @@ test('有效会话重新打开 H5 后直接恢复到今日页', async ({ page })
   await page.goto('/')
 
   await expect(page).toHaveURL(/\/today$/)
-  await expect(page.getByRole('heading', { name: '今天' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'FormTally' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '日期切换' })).toBeVisible()
 })
 
 test('退出后不能再次进入受保护页面', async ({ page }) => {
@@ -55,6 +56,8 @@ test('退出后不能再次进入受保护页面', async ({ page }) => {
   })
 
   await page.goto('/')
+  await expect(page).toHaveURL(/\/today$/)
+  await page.goto('/me')
   await page.getByRole('button', { name: '退出登录' }).click()
   await expect(page).toHaveURL(/\/welcome$/)
 

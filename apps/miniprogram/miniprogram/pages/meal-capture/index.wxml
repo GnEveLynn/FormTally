@@ -17,6 +17,7 @@
   <view wx:if="{{imagePath}}" class="notice">
     <view class="notice-title">AI 图片处理确认</view>
     <view>餐食图片将上传并发送给第三方 AI 服务识别；识别结果和营养数据仅为估算，请在保存前核对。</view>
+    <navigator class="notice-link" url="/pages/legal/index?kind=ai">查看 AI 图片处理说明</navigator>
     <button class="primary" bindtap="startAI" disabled="{{busy}}">同意并开始分析</button>
     <button class="link" bindtap="abandon" disabled="{{busy}}">放弃本次草稿</button>
   </view>

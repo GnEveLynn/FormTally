@@ -1,4 +1,5 @@
 import { weChatLogin } from '../../platform/auth'
+import { openPrivacyContract } from '../../platform/legal'
 import { sessionStore } from '../../stores/session'
 import { agreementVersion, nextLoginAction, routeForSession } from './model'
 
@@ -47,5 +48,7 @@ Page({
   onAgreementChange(event: { detail: { value: string[] } }) {
     this.setData({ acceptedAgreements: event.detail.value.includes('accepted'), error: '' })
   },
+
+  openPrivacyContract,
 
 })

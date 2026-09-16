@@ -9,7 +9,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags='-s -w' -o /out/formtal
 
 FROM alpine:3.20
 
-RUN addgroup -S formtally && adduser -S -G formtally -h /nonexistent formtally
+RUN apk add --no-cache tzdata && \
+    addgroup -S formtally && adduser -S -G formtally -h /nonexistent formtally
 COPY --from=api-build /out/formtally-api /app/formtally-api
 COPY --from=api-build /out/formtally-migrate /app/formtally-migrate
 COPY --from=api-build /src/server/migrations /app/migrations

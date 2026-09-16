@@ -15,6 +15,7 @@
     "pages/me/index",
     "pages/profile/index",
     "pages/goals/index",
+    "pages/legal/index",
     "pages/delete-account/index"
   ],
   "window": {

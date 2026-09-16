@@ -5,12 +5,12 @@
 
   <view wx:if="{{busy}}" class="status">正在连接…</view>
   <block wx:if="{{!busy}}">
-    <checkbox-group bindchange="onAgreementChange">
-      <label class="agreement">
-        <checkbox value="accepted" checked="{{acceptedAgreements}}" />
-        <text>我已阅读并同意服务协议与隐私政策（版本 {{agreementVersion}}）</text>
-      </label>
-    </checkbox-group>
+    <view class="agreement">
+      <checkbox-group bindchange="onAgreementChange">
+        <label class="agreement-check"><checkbox value="accepted" checked="{{acceptedAgreements}}" /><text>我已阅读并同意</text></label>
+      </checkbox-group>
+      <view class="agreement-links"><navigator class="agreement-link" url="/pages/legal/index?kind=terms">《用户协议》</navigator><text>与</text><text class="agreement-link" bindtap="openPrivacyContract">《隐私政策》</text><text>（版本 {{agreementVersion}}）</text></view>
+    </view>
     <button class="primary" bindtap="startWeChatSession" loading="{{busy}}" disabled="{{busy}}">微信一键登录</button>
     <view class="hint">仅使用当前小程序内的微信身份创建账户，不会获取你的手机号。</view>
   </block>

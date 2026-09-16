@@ -2,6 +2,9 @@
 .eyebrow { color: var(--ft-color-text-muted); font-size: 24rpx; font-weight: 700; letter-spacing: 6rpx; }
 .title { margin-top: 20rpx; font-size: var(--ft-font-size-title); font-weight: 700; }
 .intro, .hint, .status { margin-top: 24rpx; color: var(--ft-color-text-muted); line-height: 1.6; }
-.agreement { display: flex; gap: 16rpx; align-items: center; min-height: 96rpx; margin-top: 64rpx; font-size: 28rpx; line-height: 1.5; }
+.agreement { min-height: 96rpx; margin-top: 64rpx; font-size: 28rpx; line-height: 1.5; }
+.agreement-check { display: flex; gap: 16rpx; align-items: center; }
+.agreement-links { margin: 12rpx 0 0 58rpx; }
+.agreement-link { display: inline; color: #178958; text-decoration: underline; }
 .primary { min-height: 104rpx; margin-top: 32rpx; border-radius: 999rpx; background: var(--ft-color-text); color: #fff; font-weight: 700; }
 .error { margin-top: 24rpx; color: #a22b2b; }
