@@ -1,3 +1,5 @@
+import { sessionStore } from '../stores/session'
+
 const items = [
   { path: '/pages/today/index', text: '今日', icon: '⌂' },
   { path: '/pages/meal-capture/index', text: '记录饮食', icon: '▣' },
@@ -13,8 +15,15 @@ Component({
     this.setData({ selected: route === 'pages/history/index' ? 2 : route === 'pages/me/index' ? 3 : 0 })
   },
   methods: {
-    switchTab(event: WechatMiniprogram.TouchEvent) {
+    async switchTab(event: WechatMiniprogram.TouchEvent) {
       const index = Number(event.currentTarget.dataset.index)
+      if (index !== 0) {
+        await sessionStore.restore()
+        if (sessionStore.state.status !== 'authenticated') {
+          wx.navigateTo({ url: '/pages/login/index' })
+          return
+        }
+      }
       if (index !== 1) { wx.switchTab({ url: String(event.currentTarget.dataset.path) }); return }
       const open = () => {
         const pages = getCurrentPages()

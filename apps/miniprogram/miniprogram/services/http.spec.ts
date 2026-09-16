@@ -29,7 +29,7 @@ describe('mini-program HTTP client', () => {
     setSessionToken('session-token')
     await expect(request('/v1/profile', { method: 'PUT', body: { heightCm: 178 } })).resolves.toEqual({ profile: null })
 
-    expect(requestOptions.url).toBe('https://trial-api.formtally.invalid/v1/profile')
+    expect(requestOptions.url).toBe('https://api.hzcoder.xyz/v1/profile')
     expect(requestOptions.method).toBe('PUT')
     expect(requestOptions.data).toEqual({ heightCm: 178 })
     expect(requestOptions.header.Authorization).toBe('Bearer session-token')

@@ -1,6 +1,7 @@
 import type { DaySummary } from '@formtally/api-contract/days'
 import { chooseAndProcessMealImage } from '../../platform/media'
 import { mealDraftStore } from '../../stores/meal-draft'
+import { sessionStore } from '../../stores/session'
 import { dateTabsAt, todayStore } from '../../stores/today'
 import { mediaFailureView } from '../meal-capture/model'
 
@@ -32,6 +33,16 @@ Page({
   },
 
   async onShow() {
+    await sessionStore.restore()
+    if (sessionStore.state.status !== 'authenticated') {
+      if (sessionStore.state.status === 'failed') {
+        this.setData({ status: 'error', error: sessionStore.state.error, dateTabs: dateTabsAt(todayStore.state.todayDate), groups: displayGroups(null) })
+        return
+      }
+      todayStore.browse()
+      this.sync()
+      return
+    }
     const pending = todayStore.load()
     this.sync()
     await pending
@@ -58,6 +69,11 @@ Page({
 
   async selectDate(event: WechatMiniprogram.TouchEvent) {
     const date = String(event.currentTarget.dataset.date)
+    if (sessionStore.state.status !== 'authenticated') {
+      todayStore.browse(date)
+      this.sync()
+      return
+    }
     const pending = todayStore.load(date)
     this.sync()
     await pending
@@ -69,6 +85,10 @@ Page({
   },
 
   openRecord(event?: WechatMiniprogram.TouchEvent) {
+    if (sessionStore.state.status !== 'authenticated') {
+      wx.navigateTo({ url: '/pages/login/index' })
+      return
+    }
     const type = String(event?.currentTarget.dataset.type ?? mealDraftStore.state.mealType)
     const index = Math.max(0, mealTypes.indexOf(type as typeof mealTypes[number]))
     mealDraftStore.state.mealType = mealTypes[index] ?? 'lunch'

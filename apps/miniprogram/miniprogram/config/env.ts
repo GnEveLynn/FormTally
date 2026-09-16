@@ -2,8 +2,8 @@ export type MiniProgramEnvironment = 'develop' | 'trial' | 'release'
 
 const defaults: Record<MiniProgramEnvironment, string> = {
   develop: 'https://develop-api.formtally.invalid',
-  trial: 'https://trial-api.formtally.invalid',
-  release: 'https://api.formtally.invalid',
+  trial: 'https://api.hzcoder.xyz',
+  release: 'https://api.hzcoder.xyz',
 }
 
 export function apiBaseUrl(environment: MiniProgramEnvironment, explicit = defaults[environment]): string {

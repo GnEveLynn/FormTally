@@ -15,6 +15,11 @@ describe('mini-program API environment', () => {
     expect(apiBaseUrl(environment)).toMatch(/^https:\/\//)
   })
 
+  it('uses the public API domain for trial and release builds', () => {
+    expect(apiBaseUrl('trial')).toBe('https://api.hzcoder.xyz')
+    expect(apiBaseUrl('release')).toBe('https://api.hzcoder.xyz')
+  })
+
   it('allows an explicit localhost URL only in the development simulator', () => {
     expect(apiBaseUrl('develop', 'http://127.0.0.1:8080')).toBe('http://127.0.0.1:8080')
     expect(() => apiBaseUrl('trial', 'http://127.0.0.1:8080')).toThrow('HTTPS')

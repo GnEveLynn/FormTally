@@ -1,10 +1,10 @@
 {
   "pages": [
+    "pages/today/index",
     "pages/login/index",
     "pages/onboarding-profile/index",
     "pages/onboarding-goal/index",
     "pages/onboarding-result/index",
-    "pages/today/index",
     "pages/meal-capture/index",
     "pages/meal-analyzing/index",
     "pages/meal-confirm/index",

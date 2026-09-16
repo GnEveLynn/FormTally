@@ -1,7 +1,7 @@
 import type { DaySummary } from '@formtally/api-contract/days'
 import * as daysApi from '../services/days'
 
-type TodayStatus = 'idle' | 'loading' | 'empty' | 'ready' | 'error'
+type TodayStatus = 'idle' | 'loading' | 'guest' | 'empty' | 'ready' | 'error'
 
 export function localDateAt(date: Date, offsetMinutes = -date.getTimezoneOffset()): string {
   return new Date(date.getTime() + offsetMinutes * 60_000).toISOString().slice(0, 10)
@@ -39,6 +39,12 @@ export function createTodayStore(client: { getDay(date: string): Promise<DaySumm
 
   return {
     state,
+    browse(date = today()) {
+      state.localDate = date
+      state.status = 'guest'
+      state.day = null
+      state.error = ''
+    },
     load,
     retry: () => load(state.localDate),
     async refreshAfterSave(affectedLocalDates: string[]) {

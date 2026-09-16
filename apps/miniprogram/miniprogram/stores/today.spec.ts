@@ -56,4 +56,12 @@ describe('mini-program today store', () => {
     expect(store.state.localDate).toBe('2026-09-14')
     expect(store.state.todayDate).toBe('2026-09-15')
   })
+
+  it('shows an anonymous home preview without requesting protected data', () => {
+    const getDay = vi.fn()
+    const store = createTodayStore({ getDay }, () => '2026-09-15')
+    store.browse('2026-09-14')
+    expect(getDay).not.toHaveBeenCalled()
+    expect(store.state).toMatchObject({ status: 'guest', localDate: '2026-09-14', day: null, error: '' })
+  })
 })
