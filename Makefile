@@ -4,7 +4,7 @@ ALLOWED_ORIGINS ?= http://127.0.0.1:5173
 APP_ENV ?= development
 SMS_DRIVER ?= test
 
-.PHONY: dev-api dev-h5 db-up migrate migrate-down test-go test-db test-web test-e2e test-miniprogram build-miniprogram scan-miniprogram ai-eval build-release scan-artifacts container-build container-check verify verify-rc
+.PHONY: dev-api dev-h5 db-up backend-up backend-down migrate migrate-down test-go test-db test-web test-e2e test-miniprogram build-miniprogram scan-miniprogram ai-eval build-release scan-artifacts container-build container-check verify verify-rc
 
 dev-api:
 	cd server && DATABASE_URL="$(DATABASE_URL)" ALLOWED_ORIGINS="$(ALLOWED_ORIGINS)" APP_ENV="$(APP_ENV)" SMS_DRIVER="$(SMS_DRIVER)" go run ./cmd/api
@@ -18,6 +18,12 @@ db-up:
 	else \
 		docker compose up -d --wait postgres; \
 	fi
+
+backend-up:
+	docker compose up -d --build --wait api
+
+backend-down:
+	docker compose down
 
 migrate:
 	cd server && DATABASE_URL="$(DATABASE_URL)" go run ./cmd/migrate up

@@ -21,6 +21,15 @@ make dev-h5
 
 H5：<http://127.0.0.1:5173>；API：<http://127.0.0.1:8080/healthz>，返回 `{"status":"ok"}`。两者独立启动，Ctrl+C 停止；API 会等待正在处理的请求结束，最多 5 秒。
 
+也可以把 PostgreSQL、数据库迁移和 API 一起运行在 Docker 中：
+
+```sh
+make backend-up
+curl http://127.0.0.1:9999/healthz
+```
+
+配置仍从根目录 `.env` 读取；容器内会使用 Compose 网络连接数据库，本地图片和数据库分别保存在命名卷中。运行 `make backend-down` 停止服务，数据不会删除。
+
 开发命令默认连接 `postgres://formtally:formtally@127.0.0.1:5432/formtally`，并只允许 `http://127.0.0.1:5173` 作为写请求来源。可用环境变量覆盖：
 
 ```sh

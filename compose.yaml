@@ -18,5 +18,54 @@ services:
       timeout: 5s
       retries: 10
 
+  migrate:
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: formtally:local
+    command: ["/app/formtally-migrate", "up"]
+    environment:
+      DATABASE_URL: postgres://formtally:formtally@postgres:5432/formtally?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: Containerfile
+    image: formtally:local
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    environment:
+      DATABASE_URL: postgres://formtally:formtally@postgres:5432/formtally?sslmode=disable
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://127.0.0.1:5173}
+      APP_ENV: development
+      SMS_DRIVER: test
+      STORAGE_DRIVER: filesystem
+      STORAGE_PATH: /var/lib/formtally/images
+      IMAGE_URL_SECRET: ${IMAGE_URL_SECRET:-formtally-development-image-secret}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      OPENAI_API_STYLE: ${OPENAI_API_STYLE:-responses}
+      OPENAI_TIMEOUT: ${OPENAI_TIMEOUT:-20s}
+      WECHAT_APP_ID: ${WECHAT_APP_ID:-}
+      WECHAT_APP_SECRET: ${WECHAT_APP_SECRET:-}
+      WECHAT_API_BASE_URL: ${WECHAT_API_BASE_URL:-https://api.weixin.qq.com}
+      WECHAT_API_TIMEOUT: ${WECHAT_API_TIMEOUT:-5s}
+    ports:
+      - "127.0.0.1:9999:8080"
+    volumes:
+      - formtally-images:/var/lib/formtally/images
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   formtally-postgres-data:
+    name: formtally-postgres-data
+  formtally-images:

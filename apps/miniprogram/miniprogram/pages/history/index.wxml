@@ -1,6 +1,20 @@
-<view class="page"><view class="eyebrow">FORMTALLY</view><view class="title">历史</view>
-<view class="pickers"><picker mode="date" fields="month" value="{{month}}" bindchange="changeMonth"><view class="picker">月份 {{month}} ›</view></picker><picker mode="date" value="{{selectedDate}}" bindchange="selectDate"><view class="picker">日期 {{selectedDate}} ›</view></picker></view>
-<view wx:if="{{recordedDates.length}}" class="marks">有记录：<text wx:for="{{recordedDates}}" wx:key="*this">{{item}} </text></view>
-<view wx:if="{{monthStatus === 'loading' || dayStatus === 'loading'}}" class="state">正在加载记录…</view>
-<view wx:elif="{{dayStatus === 'error'}}" class="state"><view class="error">{{error}}</view><button bindtap="retry">重试</button></view>
-<block wx:elif="{{day}}"><view wx:if="{{day.progress}}" class="summary">热量 {{day.progress.energy.consumed}} / {{day.progress.energy.target}} 千卡 · 蛋白质 {{day.progress.protein.consumed}}g</view><view wx:if="{{dayStatus === 'empty'}}" class="state">这天没有记录</view><block wx:else><view wx:for="{{groups}}" wx:key="mealType" class="group"><view class="heading">{{item.label}}</view><view wx:for="{{item.meals}}" wx:for-item="meal" wx:key="id" class="meal" data-id="{{meal.id}}" bindtap="openMeal"><text>{{meal.totals.energyKcal}} 千卡</text><text>蛋白质 {{meal.totals.proteinGrams}}g · 碳水 {{meal.totals.carbGrams}}g · 脂肪 {{meal.totals.fatGrams}}g</text></view></view></block></block></view>
+<view class="page">
+  <view class="page-head"><view class="title">历史记录</view><view class="subtitle">回顾每一天的饮食与营养</view></view>
+  <view class="calendar-card">
+    <view class="calendar-head"><button bindtap="previousMonth" aria-label="上个月">‹</button><view>{{monthLabel}}</view><button bindtap="nextMonth" aria-label="下个月">›</button><button class="today-button" bindtap="goToday">回到今天</button></view>
+    <view class="weekdays"><text wx:for="{{['一','二','三','四','五','六','日']}}" wx:key="*this">{{item}}</text></view>
+    <view class="calendar-grid"><button wx:for="{{calendar}}" wx:key="date" class="calendar-day {{item.inMonth ? '' : 'outside'}} {{item.selected ? 'selected' : ''}}" data-date="{{item.date}}" data-in-month="{{item.inMonth}}" bindtap="selectDate"><text>{{item.day}}</text><text wx:if="{{item.recorded}}" class="dot"></text></button></view>
+  </view>
+  <view wx:if="{{monthStatus === 'loading' || dayStatus === 'loading'}}" class="state">正在加载记录…</view>
+  <view wx:elif="{{dayStatus === 'error'}}" class="state"><view class="state-title">暂时无法加载</view><view class="error">{{error}}</view><button class="retry" bindtap="retry">重试</button></view>
+  <block wx:elif="{{day}}">
+    <view class="section-card summary-card"><view class="section-head"><view><view class="section-title">{{selectedDateLabel}}</view><view class="section-subtitle">营养概览</view></view><view class="status-pill">{{dayStatus === 'empty' ? '未记录' : '已记录'}}</view></view>
+      <view wx:if="{{day.progress}}" class="summary-content"><view class="ring" style="--progress: {{day.progress.energy.percent * 3.6}}deg"><view class="ring-inner"><text class="ring-value">{{day.progress.energy.consumed}}</text><text>/ {{day.progress.energy.target}} 千卡</text></view></view><view class="metrics"><view><text>蛋白质</text><text>{{day.progress.protein.consumed}} / {{day.progress.protein.target}}g</text><progress percent="{{day.progress.protein.percent}}" stroke-width="6" activeColor="#f29b6d" backgroundColor="#edf1ef"/></view><view><text>碳水</text><text>{{day.progress.carb.consumed}} / {{day.progress.carb.target}}g</text><progress percent="{{day.progress.carb.percent}}" stroke-width="6" activeColor="#65a9ea" backgroundColor="#edf1ef"/></view><view><text>脂肪</text><text>{{day.progress.fat.consumed}} / {{day.progress.fat.target}}g</text><progress percent="{{day.progress.fat.percent}}" stroke-width="6" activeColor="#48c783" backgroundColor="#edf1ef"/></view></view></view>
+      <view wx:else class="empty-copy">这一天还没有目标数据</view>
+    </view>
+    <view class="section-card"><view class="section-head"><view><view class="section-title">当日餐次</view><view class="section-subtitle">共 {{groups.length}} 个餐别</view></view></view>
+      <view wx:if="{{dayStatus === 'empty'}}" class="empty-copy">这天没有饮食记录，换个有绿色圆点的日期看看。</view>
+      <view wx:else class="groups"><view wx:for="{{groups}}" wx:key="mealType" class="group"><view class="group-head"><text class="meal-icon {{item.mealType}}">{{item.icon}}</text><text>{{item.label}}</text></view><view wx:for="{{item.meals}}" wx:for-item="meal" wx:key="id" class="meal" data-id="{{meal.id}}" bindtap="openMeal"><view><text class="meal-time">{{meal.time}}</text><text class="meal-energy">{{meal.totals.energyKcal}} 千卡</text></view><view class="meal-detail">蛋白质 {{meal.totals.proteinGrams}}g · 碳水 {{meal.totals.carbGrams}}g · 脂肪 {{meal.totals.fatGrams}}g</view><text class="chevron">›</text></view></view></view>
+    </view>
+  </block>
+</view>
